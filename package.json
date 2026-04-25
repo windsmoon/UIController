@@ -1,0 +1,23 @@
+{
+  "name": "com.windsmoon.uicontroller",
+  "displayName": "UI Controller",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "A Unity package for building reusable UI controller workflows.",
+  "keywords": [
+    "unity",
+    "ui",
+    "controller"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "windsmoon",
+    "url": "https://github.com/windsmoon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/windsmoon/UIController.git"
+  },
+  "samples": [],
+  "dependencies": {}
+}

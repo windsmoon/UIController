@@ -1,0 +1,19 @@
+{
+  "name": "Windsmoon.UIController.Runtime.Tests",
+  "rootNamespace": "Windsmoon.UIController.Tests",
+  "references": [
+    "Windsmoon.UIController.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}

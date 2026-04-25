@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.windsmoon.uicontroller": {
+      "version": "file:../../",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.2d.animation": {
       "version": "12.0.2",
       "depth": 0,

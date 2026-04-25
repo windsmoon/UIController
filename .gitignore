@@ -1,0 +1,36 @@
+# Unity generated files in the development project.
+UnityProject~/[Ll]ibrary/
+UnityProject~/[Tt]emp/
+UnityProject~/[Oo]bj/
+UnityProject~/[Bb]uild/
+UnityProject~/[Bb]uilds/
+UnityProject~/[Ll]ogs/
+UnityProject~/[Uu]ser[Ss]ettings/
+UnityProject~/[Mm]emoryCaptures/
+UnityProject~/[Rr]ecordings/
+
+# IDE and Unity generated project files.
+.vs/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.unityproj
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.tmp
+*.log
+
+# Build artifacts.
+*.apk
+*.aab
+*.unitypackage
+*.unitypackage.meta
+*.app
