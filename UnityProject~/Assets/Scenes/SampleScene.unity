@@ -3101,6 +3101,7 @@ MonoBehaviour:
   _upPosButton: {fileID: 1042640276}
   _middlePosButton: {fileID: 2082250103}
   _downPosButton: {fileID: 1309838372}
+  _hoverImage: {fileID: 220972929}
 --- !u!1 &2082250101
 GameObject:
   m_ObjectHideFlags: 0
