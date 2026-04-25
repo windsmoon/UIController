@@ -19,5 +19,7 @@
     "url": "https://github.com/windsmoon/UIController.git"
   },
   "samples": [],
-  "dependencies": {}
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  }
 }

@@ -35,7 +35,12 @@ namespace Framework.UI.Controller
         {
             new UIControllerPropertyDefinition(UIControllerActiveProperty.PropertyName, () => new UIControllerActiveProperty()),
             new UIControllerPropertyDefinition(UIControllerAnchoredPositionProperty.PropertyName, () => new UIControllerAnchoredPositionProperty()),
+            new UIControllerPropertyDefinition(UIControllerCanvasGroupAlphaProperty.PropertyName, () => new UIControllerCanvasGroupAlphaProperty()),
+            new UIControllerPropertyDefinition(UIControllerImageColorProperty.PropertyName, () => new UIControllerImageColorProperty()),
             new UIControllerPropertyDefinition(UIControllerLocalScaleProperty.PropertyName, () => new UIControllerLocalScaleProperty()),
+            new UIControllerPropertyDefinition(UIControllerSizeDeltaProperty.PropertyName, () => new UIControllerSizeDeltaProperty()),
+            new UIControllerPropertyDefinition(UIControllerTextForTextMeshProperty.PropertyName, () => new UIControllerTextForTextMeshProperty()),
+            new UIControllerPropertyDefinition(UIControllerTextMeshColorProperty.PropertyName, () => new UIControllerTextMeshColorProperty()),
         };
 
         private static readonly Dictionary<string, UIControllerPropertyDefinition> s_definitionDict = BuildDefinitionDict();

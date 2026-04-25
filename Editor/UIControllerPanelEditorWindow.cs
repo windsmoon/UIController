@@ -615,6 +615,15 @@ namespace Framework.UI.Editor
                     _propertyValueBufferDict[propertyValueKey] = newValue;
                 }
             }
+            else if (property is UIControllerProperty<string>)
+            {
+                string stringValue = value as string ?? string.Empty;
+                string newValue = EditorGUILayout.TextField("Value", stringValue, GUILayout.MinWidth(180f));
+                if (newValue != stringValue)
+                {
+                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                }
+            }
             else if (property is UIControllerProperty<float>)
             {
                 float floatValue = value is float floatBuffer ? floatBuffer : 0f;
@@ -684,6 +693,7 @@ namespace Framework.UI.Editor
         private bool CanEditPropertyValue(UIControllerProperty property)
         {
             return property is UIControllerProperty<bool> ||
+                   property is UIControllerProperty<string> ||
                    property is UIControllerProperty<float> ||
                    property is UIControllerProperty<Vector2> ||
                    property is UIControllerProperty<Vector3> ||
@@ -714,6 +724,11 @@ namespace Framework.UI.Editor
                 return floatProperty.GetTargetValue();
             }
 
+            if (property is UIControllerProperty<string> stringProperty)
+            {
+                return stringProperty.GetTargetValue();
+            }
+
             if (property is UIControllerProperty<Vector2> vector2Property)
             {
                 return vector2Property.GetTargetValue();
@@ -741,6 +756,10 @@ namespace Framework.UI.Editor
             else if (property is UIControllerProperty<float> floatProperty && value is float floatValue)
             {
                 floatProperty.SetTargetValue(floatValue);
+            }
+            else if (property is UIControllerProperty<string> stringProperty && value is string stringValue)
+            {
+                stringProperty.SetTargetValue(stringValue);
             }
             else if (property is UIControllerProperty<Vector2> vector2Property && value is Vector2 vector2Value)
             {
