@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Framework.UI.Controller.Properties;
+using Windsmoon.UIStateController.Properties;
 using UnityEngine;
 
-namespace Framework.UI.Controller
+namespace Windsmoon.UIStateController
 {
     [Serializable]
     public class UIControllerTargetStateData

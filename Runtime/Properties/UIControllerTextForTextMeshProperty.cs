@@ -2,7 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 
-namespace Framework.UI.Controller.Properties
+namespace Windsmoon.UIStateController.Properties
 {
     [Serializable]
     public class UIControllerTextForTextMeshProperty : UIControllerProperty<string>

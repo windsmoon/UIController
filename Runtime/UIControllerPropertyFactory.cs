@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Framework.UI.Controller.Properties;
+using Windsmoon.UIStateController.Properties;
 
-namespace Framework.UI.Controller
+namespace Windsmoon.UIStateController
 {
     public sealed class UIControllerPropertyDefinition
     {

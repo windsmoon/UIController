@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Framework.UI.Controller
+namespace Windsmoon.UIStateController
 {
     [Serializable]
     public class UIControllerStateData

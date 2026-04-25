@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using DG.DOTweenEditor;
-using Framework.UI.Controller;
-using Framework.UI.Controller.Properties;
+using Windsmoon.UIStateController;
+using Windsmoon.UIStateController.Properties;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-namespace Framework.UI.Editor
+namespace Windsmoon.UIStateController.Editor
 {
     public class UIControllerPanelEditorWindow : EditorWindow
     {

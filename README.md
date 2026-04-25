@@ -80,7 +80,7 @@ Open `UnityProject~` only when you want to inspect or run the demo project. The 
 6. Switch states from code:
 
 ```csharp
-using Framework.UI.Controller;
+using Windsmoon.UIStateController;
 using UnityEngine;
 
 public class Example : MonoBehaviour
@@ -132,7 +132,7 @@ Example:
 
 ```csharp
 using System;
-using Framework.UI.Controller.Properties;
+using Windsmoon.UIStateController.Properties;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -321,7 +321,7 @@ DOTween 引用提示：如果你的项目里已经安装了 DOTween，而导入�
 6. 在代码中切换状态：
 
 ```csharp
-using Framework.UI.Controller;
+using Windsmoon.UIStateController;
 using UnityEngine;
 
 public class Example : MonoBehaviour
@@ -373,7 +373,7 @@ public void SetControllerState(string controllerName, int stateIndex, bool force
 
 ```csharp
 using System;
-using Framework.UI.Controller.Properties;
+using Windsmoon.UIStateController.Properties;
 using UnityEngine;
 using UnityEngine.UI;
 

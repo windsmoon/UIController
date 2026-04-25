@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Text;
-using Framework.UI.Controller;
+using Windsmoon.UIStateController;
 using UnityEditor;
 using UnityEngine;
 
-namespace Framework.UI.Editor
+namespace Windsmoon.UIStateController.Editor
 {
     [CustomEditor(typeof(UIControllerPanel))]
     public class UIControllerPanelInspector : UnityEditor.Editor
