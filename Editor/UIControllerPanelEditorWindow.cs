@@ -593,7 +593,7 @@ namespace Framework.UI.Editor
                 return;
             }
 
-            GUILayout.Label($"Value  {property.GetValueText()}", _inlineValueLabelStyle);
+            DrawPropertyReadonlyValue(property);
             using (new EditorGUI.DisabledScope(CanEditPropertyValue(property) == false))
             {
                 if (GUILayout.Button("Edit", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(24f)))
@@ -602,6 +602,21 @@ namespace Framework.UI.Editor
                     _propertyValueBufferDict[propertyValueKey] = GetPropertyTargetValue(property);
                 }
             }
+        }
+
+        private void DrawPropertyReadonlyValue(UIControllerProperty property)
+        {
+            if (property is UIControllerProperty<Color> colorProperty)
+            {
+                GUILayout.Label("Value", _inlineValueLabelStyle, GUILayout.Width(42f));
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.ColorField(GUIContent.none, colorProperty.GetTargetValue(), false, true, false, GUILayout.Width(72f), GUILayout.Height(18f));
+                }
+                return;
+            }
+
+            GUILayout.Label($"Value  {property.GetValueText()}", _inlineValueLabelStyle);
         }
 
         private void DrawPropertyValueEditor(UIControllerProperty property, string propertyValueKey)
