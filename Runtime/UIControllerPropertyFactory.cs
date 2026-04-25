@@ -33,6 +33,7 @@ namespace Framework.UI.Controller
         #region fields
         private static readonly UIControllerPropertyDefinition[] s_definitionArray =
         {
+            new UIControllerPropertyDefinition(UIControllerActiveProperty.PropertyName, () => new UIControllerActiveProperty()),
             new UIControllerPropertyDefinition(UIControllerAnchoredPositionProperty.PropertyName, () => new UIControllerAnchoredPositionProperty()),
             new UIControllerPropertyDefinition(UIControllerLocalScaleProperty.PropertyName, () => new UIControllerLocalScaleProperty()),
         };
