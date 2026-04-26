@@ -2481,7 +2481,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 222}
+  m_AnchoredPosition: {x: 0, y: 33.000023}
   m_SizeDelta: {x: 232.59998, y: 33.544983}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1649184949
@@ -2514,61 +2514,61 @@ MonoBehaviour:
       _targetStateList:
       - _name: Strar1
         _propertyList:
-        - rid: 1165357559393812737
+        - rid: 1165357574679167096
       - _name: Strar2
         _propertyList:
-        - rid: 1165357559393812738
+        - rid: 1165357574679167097
       - _name: Strar3
         _propertyList:
-        - rid: 1165357559393812739
+        - rid: 1165357574679167098
       - _name: Strar4
         _propertyList:
-        - rid: 1165357559393812740
+        - rid: 1165357574679167099
       _comment: level 1
     - _index: 1
       _targetStateList:
       - _name: Strar1
         _propertyList:
-        - rid: 1165357559393812741
+        - rid: 1165357574679167103
       - _name: Strar2
         _propertyList:
-        - rid: 1165357559393812742
+        - rid: 1165357574679167102
       - _name: Strar3
         _propertyList:
-        - rid: 1165357559393812743
+        - rid: 1165357574679167101
       - _name: Strar4
         _propertyList:
-        - rid: 1165357559393812744
+        - rid: 1165357574679167100
       _comment: level 2
     - _index: 2
       _targetStateList:
       - _name: Strar1
         _propertyList:
-        - rid: 1165357559393812745
+        - rid: 1165357574679167104
       - _name: Strar2
         _propertyList:
-        - rid: 1165357559393812746
+        - rid: 1165357574679167105
       - _name: Strar3
         _propertyList:
-        - rid: 1165357559393812747
+        - rid: 1165357574679167106
       - _name: Strar4
         _propertyList:
-        - rid: 1165357559393812748
+        - rid: 1165357574679167107
       _comment: level 3
     - _index: 3
       _targetStateList:
       - _name: Strar1
         _propertyList:
-        - rid: 1165357559393812749
+        - rid: 1165357574679167108
       - _name: Strar2
         _propertyList:
-        - rid: 1165357559393812750
+        - rid: 1165357574679167109
       - _name: Strar3
         _propertyList:
-        - rid: 1165357559393812751
+        - rid: 1165357574679167110
       - _name: Strar4
         _propertyList:
-        - rid: 1165357559393812752
+        - rid: 1165357574679167111
       _comment: level 4
   - _name: Pos
     _stateList:
@@ -2576,118 +2576,118 @@ MonoBehaviour:
       _targetStateList:
       - _name: StarsPanel
         _propertyList:
-        - rid: 1165357559393812759
-      _comment: 
+        - rid: 1165357574679167115
+      _comment: up
     - _index: 1
       _targetStateList:
       - _name: StarsPanel
         _propertyList:
-        - rid: 1165357559393812760
-      _comment: 
+        - rid: 1165357574679167116
+      _comment: middle
     - _index: 2
       _targetStateList:
       - _name: StarsPanel
         _propertyList:
-        - rid: 1165357559393812761
-      _comment: 
+        - rid: 1165357574679167117
+      _comment: down
   references:
     version: 2
     RefIds:
-    - rid: 1165357559393812737
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167096
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812738
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167097
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812739
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167098
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812740
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167099
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812741
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
-      data:
-        _needAnimation: 0
-        _value: 1
-    - rid: 1165357559393812742
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
-      data:
-        _needAnimation: 0
-        _value: 1
-    - rid: 1165357559393812743
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167100
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812744
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167101
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812745
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167102
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812746
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167103
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812747
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167104
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812748
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167105
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
+      data:
+        _needAnimation: 0
+        _value: 1
+    - rid: 1165357574679167106
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
+      data:
+        _needAnimation: 0
+        _value: 1
+    - rid: 1165357574679167107
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 0
-    - rid: 1165357559393812749
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167108
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812750
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167109
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812751
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167110
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812752
-      type: {class: UIControllerActiveProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167111
+      type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
         _value: 1
-    - rid: 1165357559393812759
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167115
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
-        _value: {x: 0, y: 222}
-    - rid: 1165357559393812760
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+        _value: {x: 0, y: 223}
+    - rid: 1165357574679167116
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
-        _value: {x: 0, y: 0}
-    - rid: 1165357559393812761
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+        _value: {x: 0, y: 32.999992}
+    - rid: 1165357574679167117
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
-        _value: {x: 0, y: -107}
+        _value: {x: 0, y: -129}
 --- !u!1 &1659549852
 GameObject:
   m_ObjectHideFlags: 0
@@ -3360,40 +3360,40 @@ MonoBehaviour:
       _targetStateList:
       - _name: Image
         _propertyList:
-        - rid: 1165357559393812796
+        - rid: 1165357574679167119
       - _name: HoverTip
         _propertyList:
-        - rid: 1165357559393812800
+        - rid: 1165357574679167121
       _comment: 's '
     - _index: 1
       _targetStateList:
       - _name: Image
         _propertyList:
-        - rid: 1165357559393812798
+        - rid: 1165357574679167123
       - _name: HoverTip
         _propertyList:
-        - rid: 1165357559393812802
+        - rid: 1165357574679167125
       _comment: hoverd
   references:
     version: 2
     RefIds:
-    - rid: 1165357559393812796
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167119
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
         _value: {x: 50, y: 0}
-    - rid: 1165357559393812798
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167121
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
         _value: {x: 150, y: 0}
-    - rid: 1165357559393812800
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167123
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
         _value: {x: 150, y: 0}
-    - rid: 1165357559393812802
-      type: {class: UIControllerAnchoredPositionProperty, ns: Framework.UI.Controller.Properties, asm: Windsmoon.UIController.Runtime}
+    - rid: 1165357574679167125
+      type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
         _value: {x: 250, y: 0}
