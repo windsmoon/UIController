@@ -195,7 +195,7 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.windsmoon.unityuistatecontroller": {
+    "com.windsmoon.uicontroller": {
       "version": "file:../../",
       "depth": 0,
       "source": "local",
