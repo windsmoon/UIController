@@ -6,7 +6,11 @@
 
 UIController is a Unity UI state controller package for building reusable UI state workflows. It lets you bind named UI targets, define multiple controller states, capture UI values in the editor, and switch states at runtime with one API call.
 
-**Languages:** [English](#english) | [中文](#中文)
+## Language / 语言
+
+| English | 中文 |
+| --- | --- |
+| [Read English Documentation](#english) | [阅读中文文档](#中文) |
 
 <a id="english"></a>
 
