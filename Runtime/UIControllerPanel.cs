@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using DG.Tweening;
-using Windsmoon.UIStateController.Properties;
+using Windsmoon.UIController.Properties;
 using UnityEngine;
 
-namespace Windsmoon.UIStateController
+namespace Windsmoon.UIController
 {
     [DisallowMultipleComponent]
     public class UIControllerPanel : MonoBehaviour, ISerializationCallbackReceiver

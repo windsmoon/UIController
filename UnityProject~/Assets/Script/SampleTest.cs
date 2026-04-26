@@ -1,4 +1,4 @@
-using Windsmoon.UIStateController;
+using Windsmoon.UIController;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;

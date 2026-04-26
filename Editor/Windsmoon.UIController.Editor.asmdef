@@ -1,6 +1,6 @@
 {
   "name": "Windsmoon.UIController.Editor",
-  "rootNamespace": "Windsmoon.UIStateController.Editor",
+  "rootNamespace": "Windsmoon.UIController.Editor",
   "references": [
     "Windsmoon.UIController.Runtime"
   ],

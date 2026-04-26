@@ -1,10 +1,10 @@
-# UnityUIStateController
+# UIController
 
 ![Unity](https://img.shields.io/badge/Unity-Recent%20versions-black)
 ![Install](https://img.shields.io/badge/Install-GitHub%20Release-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-UnityUIStateController is a Unity UI state controller package for building reusable UI state workflows. It lets you bind named UI targets, define multiple controller states, capture UI values in the editor, and switch states at runtime with one API call.
+UIController is a Unity UI state controller package for building reusable UI state workflows. It lets you bind named UI targets, define multiple controller states, capture UI values in the editor, and switch states at runtime with one API call.
 
 **Languages:** [English](#english) | [中文](#中文)
 
@@ -45,12 +45,12 @@ UnityUIStateController is a Unity UI state controller package for building reusa
 
 ### Installation
 
-Recommended: download the latest release package from [GitHub Releases](https://github.com/windsmoon/UnityUIStateController/releases), then import it into your Unity project.
+Recommended: download the latest release package from [GitHub Releases](https://github.com/windsmoon/UIController/releases), then import it into your Unity project.
 
 Optional UPM Git URL installation:
 
 ```text
-https://github.com/windsmoon/UnityUIStateController.git
+https://github.com/windsmoon/UIController.git
 ```
 
 Because `package.json` is located at the repository root, no `?path=` suffix is required.
@@ -80,7 +80,7 @@ Open `UnityProject~` only when you want to inspect or run the demo project. The 
 6. Switch states from code:
 
 ```csharp
-using Windsmoon.UIStateController;
+using Windsmoon.UIController;
 using UnityEngine;
 
 public class Example : MonoBehaviour
@@ -132,7 +132,7 @@ Example:
 
 ```csharp
 using System;
-using Windsmoon.UIStateController.Properties;
+using Windsmoon.UIController.Properties;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -287,12 +287,12 @@ MIT. See [LICENSE](LICENSE).
 
 ### 安装方式
 
-推荐方式：从 [GitHub Releases](https://github.com/windsmoon/UnityUIStateController/releases) 下载最新 Release 包，然后导入到 Unity 工程。
+推荐方式：从 [GitHub Releases](https://github.com/windsmoon/UIController/releases) 下载最新 Release 包，然后导入到 Unity 工程。
 
 可选方式：通过 UPM Git URL 安装：
 
 ```text
-https://github.com/windsmoon/UnityUIStateController.git
+https://github.com/windsmoon/UIController.git
 ```
 
 因为 `package.json` 位于仓库根目录，所以不需要追加 `?path=`。
@@ -322,7 +322,7 @@ DOTween 引用提示：如果你的项目里已经安装了 DOTween，而导入�
 6. 在代码中切换状态：
 
 ```csharp
-using Windsmoon.UIStateController;
+using Windsmoon.UIController;
 using UnityEngine;
 
 public class Example : MonoBehaviour
@@ -374,7 +374,7 @@ public void SetControllerState(string controllerName, int stateIndex, bool force
 
 ```csharp
 using System;
-using Windsmoon.UIStateController.Properties;
+using Windsmoon.UIController.Properties;
 using UnityEngine;
 using UnityEngine.UI;
 

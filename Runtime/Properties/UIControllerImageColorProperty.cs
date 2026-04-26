@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Windsmoon.UIStateController.Properties
+namespace Windsmoon.UIController.Properties
 {
     [Serializable]
     public class UIControllerImageColorProperty : UIControllerProperty<Color>

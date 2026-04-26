@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Windsmoon.UIStateController.Properties
+namespace Windsmoon.UIController.Properties
 {
     [Serializable]
     public class UIControllerAnchoredPositionProperty : UIControllerProperty<Vector2>

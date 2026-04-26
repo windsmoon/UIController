@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Windsmoon.UIStateController
+namespace Windsmoon.UIController
 {
     [Serializable]
     public struct UIControllerTargetBinding
