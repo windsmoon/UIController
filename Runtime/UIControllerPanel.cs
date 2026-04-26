@@ -97,6 +97,28 @@ namespace Windsmoon.UIController
             ApplyControllerState(stateData, forceNoAnimation);
         }
 
+        public bool HasController(string controllerName)
+        {
+            if (string.IsNullOrEmpty(controllerName) || _controllerDict == null)
+            {
+                return false;
+            }
+
+            return _controllerDict.ContainsKey(controllerName);
+        }
+
+        public bool HasState(string controllerName, int stateIndex)
+        {
+            if (stateIndex < 0 || HasController(controllerName) == false)
+            {
+                return false;
+            }
+
+            UIControllerData controllerData = _controllerDict[controllerName];
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            return stateIndex < stateList.Count;
+        }
+
         private void DeserializeControllerDict()
         {
             if (_controllerList == null || _controllerList.Count == 0)
