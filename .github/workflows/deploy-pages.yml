@@ -1,0 +1,52 @@
+name: Deploy Unity WebGL to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "UnityProject~/Bin/Web/Release/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify Unity WebGL build
+        run: |
+          test -f 'UnityProject~/Bin/Web/Release/index.html'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.loader.js'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.data'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.framework.js'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.wasm'
+
+      - name: Prepare Pages content
+        run: touch 'UnityProject~/Bin/Web/Release/.nojekyll'
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "UnityProject~/Bin/Web/Release"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
