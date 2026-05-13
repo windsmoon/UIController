@@ -4,7 +4,9 @@
 ![Install](https://img.shields.io/badge/Install-GitHub%20Release-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**Live Demo / GitHub Pages:** [https://windsmoon.github.io/UIController/](https://windsmoon.github.io/UIController/)
+**Live Demo:** [https://windsmoon.github.io/UIController/](https://windsmoon.github.io/UIController/)
+
+**在线演示 / GitHub Pages：** [https://windsmoon.github.io/UIController/](https://windsmoon.github.io/UIController/)
 
 UIController is a Unity UI state controller package for building reusable UI state workflows. It lets you bind named UI targets, define multiple controller states, capture UI values in the editor, and switch states at runtime with one API call. You can define reusable visual states directly on UI controls, such as selected button scaling, text color changes, image color changes, and other repeated UI effects.
 
