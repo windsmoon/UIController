@@ -766,7 +766,8 @@ namespace Windsmoon.UIController.Editor
             {
                 Vector2 vector2Value = vector2Property.GetTargetValue();
                 EditorGUI.BeginChangeCheck();
-                Vector2 newValue = EditorGUILayout.Vector2Field("Value", vector2Value, GUILayout.MinWidth(180f));
+                GUILayout.Label("Value", GUILayout.Width(42f));
+                Vector2 newValue = EditorGUILayout.Vector2Field(GUIContent.none, vector2Value, GUILayout.MinWidth(180f));
                 if (EditorGUI.EndChangeCheck())
                 {
                     ApplyMutation("Edit UIController Property Value", () => vector2Property.SetTargetValue(newValue));
@@ -776,10 +777,22 @@ namespace Windsmoon.UIController.Editor
             {
                 Vector3 vector3Value = vector3Property.GetTargetValue();
                 EditorGUI.BeginChangeCheck();
-                Vector3 newValue = EditorGUILayout.Vector3Field("Value", vector3Value, GUILayout.MinWidth(240f));
+                GUILayout.Label("Value", GUILayout.Width(42f));
+                Vector3 newValue = EditorGUILayout.Vector3Field(GUIContent.none, vector3Value, GUILayout.MinWidth(240f));
                 if (EditorGUI.EndChangeCheck())
                 {
                     ApplyMutation("Edit UIController Property Value", () => vector3Property.SetTargetValue(newValue));
+                }
+            }
+            else if (property is UIControllerProperty<Vector4> vector4Property)
+            {
+                Vector4 vector4Value = vector4Property.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
+                GUILayout.Label("Value", GUILayout.Width(42f));
+                Vector4 newValue = EditorGUILayout.Vector4Field(GUIContent.none, vector4Value, GUILayout.MinWidth(300f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    ApplyMutation("Edit UIController Property Value", () => vector4Property.SetTargetValue(newValue));
                 }
             }
             else if (property is UIControllerProperty<Color> colorProperty)
