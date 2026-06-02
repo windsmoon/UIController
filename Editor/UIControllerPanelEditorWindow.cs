@@ -12,12 +12,6 @@ namespace Windsmoon.UIController.Editor
 {
     public class UIControllerPanelEditorWindow : EditorWindow
     {
-        private struct PropertyAnimationBuffer
-        {
-            public Ease AnimationEase;
-            public float AnimationDuration;
-        }
-
         private const float DeleteButtonWidth = 24f;
         private const float ShowButtonWidth = 56f;
         private const float CaptureButtonWidth = 68f;
@@ -31,10 +25,6 @@ namespace Windsmoon.UIController.Editor
         private Vector2 _scrollPosition;
         private bool _pendingAnimatedShowDirty;
         private readonly Dictionary<string, bool> _stateExpandedDict = new Dictionary<string, bool>();
-        private readonly Dictionary<string, bool> _propertyValueEditingDict = new Dictionary<string, bool>();
-        private readonly Dictionary<string, object> _propertyValueBufferDict = new Dictionary<string, object>();
-        private readonly Dictionary<string, bool> _propertyAnimationEditingDict = new Dictionary<string, bool>();
-        private readonly Dictionary<string, PropertyAnimationBuffer> _propertyAnimationBufferDict = new Dictionary<string, PropertyAnimationBuffer>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
         #endregion
 
@@ -146,7 +136,6 @@ namespace Windsmoon.UIController.Editor
             _scrollPosition = Vector2.zero;
             _pendingAnimatedShowDirty = false;
             _stateExpandedDict.Clear();
-            ClearAllPropertyEditStates();
             _lastMigrationWarningList.Clear();
         }
 
@@ -266,7 +255,6 @@ namespace Windsmoon.UIController.Editor
                     ApplyMutation("Delete UIController Target", () => DeleteControllerTarget(controllerData, capturedIndex));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.EndVertical();
-                    ClearAllPropertyEditStates();
                     return;
                 }
                 EditorGUILayout.EndHorizontal();
@@ -338,7 +326,6 @@ namespace Windsmoon.UIController.Editor
                     string capturedPropertyName = newPropertyName;
                     ApplyMutation("Change UIController Property", () => ChangeControllerProperty(controllerData, targetIndex, capturedPropertyIndex, capturedPropertyName));
                     EditorGUILayout.EndHorizontal();
-                    ClearAllPropertyEditStates();
                     return;
                 }
 
@@ -347,7 +334,6 @@ namespace Windsmoon.UIController.Editor
                     int capturedPropertyIndex = propertyIndex;
                     ApplyMutation("Delete UIController Property", () => DeleteControllerProperty(controllerData, targetIndex, capturedPropertyIndex));
                     EditorGUILayout.EndHorizontal();
-                    ClearAllPropertyEditStates();
                     return;
                 }
 
@@ -446,7 +432,6 @@ namespace Windsmoon.UIController.Editor
                     ApplyMutation("Delete UIController State", () => controllerData.StateList.RemoveAt(capturedIndex));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.EndVertical();
-                    ClearAllPropertyEditStates();
                     return;
                 }
                 EditorGUILayout.EndHorizontal();
@@ -527,13 +512,12 @@ namespace Windsmoon.UIController.Editor
                     continue;
                 }
 
-                DrawPropertyRow(stateIndex, targetIndex, propertyIndex, propertyName, property, targetData.RectTransform);
+                DrawPropertyRow(propertyName, property, targetData.RectTransform);
             }
         }
 
-        private void DrawPropertyRow(int stateIndex, int targetIndex, int propertyIndex, string propertyName, UIControllerProperty property, RectTransform rectTransform)
+        private void DrawPropertyRow(string propertyName, UIControllerProperty property, RectTransform rectTransform)
         {
-            string propertyValueKey = GetPropertyValueKey(stateIndex, targetIndex, propertyIndex, propertyName);
             string errorMessage = null;
             bool isSupported = rectTransform != null && property.IsValid(rectTransform, out errorMessage);
 
@@ -545,10 +529,6 @@ namespace Windsmoon.UIController.Editor
                 if (newAnimate != property.NeedAnimate)
                 {
                     ApplyMutation("Toggle UIController Property Animation", () => property.NeedAnimate = newAnimate);
-                    if (newAnimate == false)
-                    {
-                        ClearPropertyAnimationEditState(propertyValueKey);
-                    }
                 }
             }
             else
@@ -556,7 +536,7 @@ namespace Windsmoon.UIController.Editor
                 GUILayout.Space(AnimationToggleWidth);
             }
 
-            DrawPropertyValue(property, propertyValueKey);
+            DrawPropertyValue(property);
             using (new EditorGUI.DisabledScope(isSupported == false))
             {
                 if (GUILayout.Button("Capture", GUILayout.Width(CaptureButtonWidth)))
@@ -583,111 +563,73 @@ namespace Windsmoon.UIController.Editor
 
             if (property.CanAnimate && property.NeedAnimate)
             {
-                DrawPropertyAnimationOptions(property, propertyValueKey);
+                DrawPropertyAnimationOptions(property);
             }
         }
 
-        private void DrawPropertyValue(UIControllerProperty property, string propertyValueKey)
-        {
-            if (IsPropertyValueEditing(propertyValueKey))
-            {
-                DrawPropertyValueEditor(property, propertyValueKey);
-                if (GUILayout.Button("OK", GUILayout.Width(44f)))
-                {
-                    object value = GetPropertyValueBuffer(property, propertyValueKey);
-                    ApplyMutation("Edit UIController Property Value", () => SetPropertyTargetValue(property, value));
-                    ClearPropertyValueEditState(propertyValueKey);
-                    GUI.FocusControl(null);
-                    Repaint();
-                }
-
-                return;
-            }
-
-            DrawPropertyReadonlyValue(property);
-            using (new EditorGUI.DisabledScope(CanEditPropertyValue(property) == false))
-            {
-                if (GUILayout.Button("Edit", GUILayout.Width(44f)))
-                {
-                    _propertyValueEditingDict[propertyValueKey] = true;
-                    _propertyValueBufferDict[propertyValueKey] = GetPropertyTargetValue(property);
-                }
-            }
-        }
-
-        private void DrawPropertyReadonlyValue(UIControllerProperty property)
-        {
-            if (property is UIControllerProperty<Color> colorProperty)
-            {
-                GUILayout.Label("Value", GUILayout.Width(42f));
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.ColorField(GUIContent.none, colorProperty.GetTargetValue(), false, true, false, GUILayout.Width(72f), GUILayout.Height(18f));
-                }
-                return;
-            }
-
-            GUILayout.Label($"Value  {property.GetValueText()}", GUILayout.MinWidth(120f));
-        }
-
-        private void DrawPropertyValueEditor(UIControllerProperty property, string propertyValueKey)
+        private void DrawPropertyValue(UIControllerProperty property)
         {
             float oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 38f;
-            object value = GetPropertyValueBuffer(property, propertyValueKey);
 
-            if (property is UIControllerProperty<bool>)
+            if (property is UIControllerProperty<bool> boolProperty)
             {
-                bool boolValue = value is bool boolBuffer && boolBuffer;
+                bool boolValue = boolProperty.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 bool newValue = EditorGUILayout.Toggle("Value", boolValue, GUILayout.Width(72f));
-                if (newValue != boolValue)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => boolProperty.SetTargetValue(newValue));
                 }
             }
-            else if (property is UIControllerProperty<string>)
+            else if (property is UIControllerProperty<string> stringProperty)
             {
-                string stringValue = value as string ?? string.Empty;
+                string stringValue = stringProperty.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 string newValue = EditorGUILayout.TextField("Value", stringValue, GUILayout.MinWidth(180f));
-                if (newValue != stringValue)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => stringProperty.SetTargetValue(newValue));
                 }
             }
-            else if (property is UIControllerProperty<float>)
+            else if (property is UIControllerProperty<float> floatProperty)
             {
-                float floatValue = value is float floatBuffer ? floatBuffer : 0f;
+                float floatValue = floatProperty.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 float newValue = EditorGUILayout.FloatField("Value", floatValue, GUILayout.MinWidth(120f));
-                if (!Mathf.Approximately(newValue, floatValue))
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => floatProperty.SetTargetValue(newValue));
                 }
             }
-            else if (property is UIControllerProperty<Vector2>)
+            else if (property is UIControllerProperty<Vector2> vector2Property)
             {
-                Vector2 vector2Value = value is Vector2 vector2Buffer ? vector2Buffer : Vector2.zero;
+                Vector2 vector2Value = vector2Property.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 Vector2 newValue = EditorGUILayout.Vector2Field("Value", vector2Value, GUILayout.MinWidth(180f));
-                if (newValue != vector2Value)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => vector2Property.SetTargetValue(newValue));
                 }
             }
-            else if (property is UIControllerProperty<Vector3>)
+            else if (property is UIControllerProperty<Vector3> vector3Property)
             {
-                Vector3 vector3Value = value is Vector3 vector3Buffer ? vector3Buffer : Vector3.zero;
+                Vector3 vector3Value = vector3Property.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 Vector3 newValue = EditorGUILayout.Vector3Field("Value", vector3Value, GUILayout.MinWidth(240f));
-                if (newValue != vector3Value)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => vector3Property.SetTargetValue(newValue));
                 }
             }
-            else if (property is UIControllerProperty<Color>)
+            else if (property is UIControllerProperty<Color> colorProperty)
             {
-                Color colorValue = value is Color colorBuffer ? colorBuffer : Color.white;
+                Color colorValue = colorProperty.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
                 Color newValue = EditorGUILayout.ColorField("Value", colorValue, GUILayout.MinWidth(180f));
-                if (newValue != colorValue)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _propertyValueBufferDict[propertyValueKey] = newValue;
+                    ApplyMutation("Edit UIController Property Value", () => colorProperty.SetTargetValue(newValue));
                 }
             }
             else
@@ -698,199 +640,30 @@ namespace Windsmoon.UIController.Editor
             EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
-        private void DrawPropertyAnimationOptions(UIControllerProperty property, string propertyValueKey)
+        private void DrawPropertyAnimationOptions(UIControllerProperty property)
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(PropertyPopupWidth + AnimationToggleWidth + 8f);
 
-            if (IsPropertyAnimationEditing(propertyValueKey))
+            Ease animationEase = property.AnimationEase;
+            float animationDuration = property.AnimationDuration;
+            EditorGUI.BeginChangeCheck();
+            GUILayout.Label("Ease", GUILayout.Width(34f));
+            Ease newAnimationEase = (Ease)EditorGUILayout.EnumPopup(animationEase, GUILayout.Width(150f));
+            GUILayout.Label("Duration", GUILayout.Width(58f));
+            float newAnimationDuration = EditorGUILayout.FloatField(animationDuration, GUILayout.Width(64f));
+            GUILayout.Label("s", GUILayout.Width(12f));
+            if (EditorGUI.EndChangeCheck())
             {
-                PropertyAnimationBuffer buffer = GetPropertyAnimationBuffer(property, propertyValueKey);
-                GUILayout.Label("Ease", GUILayout.Width(34f));
-                buffer.AnimationEase = (Ease)EditorGUILayout.EnumPopup(buffer.AnimationEase, GUILayout.Width(150f));
-                GUILayout.Label("Duration", GUILayout.Width(58f));
-                buffer.AnimationDuration = EditorGUILayout.FloatField(buffer.AnimationDuration, GUILayout.Width(64f));
-                GUILayout.Label("s", GUILayout.Width(12f));
-                _propertyAnimationBufferDict[propertyValueKey] = buffer;
-
-                if (GUILayout.Button("OK", GUILayout.Width(44f)))
+                ApplyMutation("Edit UIController Property Animation", () =>
                 {
-                    PropertyAnimationBuffer finalBuffer = buffer;
-                    ApplyMutation("Edit UIController Property Animation", () =>
-                    {
-                        property.AnimationEase = finalBuffer.AnimationEase;
-                        property.AnimationDuration = finalBuffer.AnimationDuration;
-                    });
-                    ClearPropertyAnimationEditState(propertyValueKey);
-                    GUI.FocusControl(null);
-                    Repaint();
-                }
-            }
-            else
-            {
-                GUILayout.Label($"Ease  {property.AnimationEase}", GUILayout.Width(160f));
-                GUILayout.Label($"Duration  {property.AnimationDuration:0.###}s", GUILayout.Width(130f));
-                if (GUILayout.Button("Edit", GUILayout.Width(44f)))
-                {
-                    _propertyAnimationEditingDict[propertyValueKey] = true;
-                    _propertyAnimationBufferDict[propertyValueKey] = new PropertyAnimationBuffer
-                    {
-                        AnimationEase = property.AnimationEase,
-                        AnimationDuration = property.AnimationDuration
-                    };
-                }
+                    property.AnimationEase = newAnimationEase;
+                    property.AnimationDuration = newAnimationDuration;
+                });
             }
 
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-        }
-
-        private bool IsPropertyValueEditing(string propertyValueKey)
-        {
-            if (_propertyValueEditingDict.TryGetValue(propertyValueKey, out bool isEditing))
-            {
-                return isEditing;
-            }
-
-            _propertyValueEditingDict[propertyValueKey] = false;
-            return false;
-        }
-
-        private void ClearPropertyValueEditState(string propertyValueKey)
-        {
-            _propertyValueEditingDict.Remove(propertyValueKey);
-            _propertyValueBufferDict.Remove(propertyValueKey);
-        }
-
-        private bool IsPropertyAnimationEditing(string propertyValueKey)
-        {
-            if (_propertyAnimationEditingDict.TryGetValue(propertyValueKey, out bool isEditing))
-            {
-                return isEditing;
-            }
-
-            _propertyAnimationEditingDict[propertyValueKey] = false;
-            return false;
-        }
-
-        private void ClearPropertyAnimationEditState(string propertyValueKey)
-        {
-            _propertyAnimationEditingDict.Remove(propertyValueKey);
-            _propertyAnimationBufferDict.Remove(propertyValueKey);
-        }
-
-        private void ClearAllPropertyEditStates()
-        {
-            _propertyValueEditingDict.Clear();
-            _propertyValueBufferDict.Clear();
-            _propertyAnimationEditingDict.Clear();
-            _propertyAnimationBufferDict.Clear();
-        }
-
-        private PropertyAnimationBuffer GetPropertyAnimationBuffer(UIControllerProperty property, string propertyValueKey)
-        {
-            if (_propertyAnimationBufferDict.TryGetValue(propertyValueKey, out PropertyAnimationBuffer buffer))
-            {
-                return buffer;
-            }
-
-            buffer = new PropertyAnimationBuffer
-            {
-                AnimationEase = property.AnimationEase,
-                AnimationDuration = property.AnimationDuration
-            };
-            _propertyAnimationBufferDict[propertyValueKey] = buffer;
-            return buffer;
-        }
-
-        private string GetPropertyValueKey(int stateIndex, int targetIndex, int propertyIndex, string propertyName)
-        {
-            return $"{_currentControllerIndex}:{stateIndex}:{targetIndex}:{propertyIndex}:{propertyName}";
-        }
-
-        private bool CanEditPropertyValue(UIControllerProperty property)
-        {
-            return property is UIControllerProperty<bool> ||
-                   property is UIControllerProperty<string> ||
-                   property is UIControllerProperty<float> ||
-                   property is UIControllerProperty<Vector2> ||
-                   property is UIControllerProperty<Vector3> ||
-                   property is UIControllerProperty<Color>;
-        }
-
-        private object GetPropertyValueBuffer(UIControllerProperty property, string propertyValueKey)
-        {
-            if (_propertyValueBufferDict.TryGetValue(propertyValueKey, out object value))
-            {
-                return value;
-            }
-
-            value = GetPropertyTargetValue(property);
-            _propertyValueBufferDict[propertyValueKey] = value;
-            return value;
-        }
-
-        private object GetPropertyTargetValue(UIControllerProperty property)
-        {
-            if (property is UIControllerProperty<bool> boolProperty)
-            {
-                return boolProperty.GetTargetValue();
-            }
-
-            if (property is UIControllerProperty<float> floatProperty)
-            {
-                return floatProperty.GetTargetValue();
-            }
-
-            if (property is UIControllerProperty<string> stringProperty)
-            {
-                return stringProperty.GetTargetValue();
-            }
-
-            if (property is UIControllerProperty<Vector2> vector2Property)
-            {
-                return vector2Property.GetTargetValue();
-            }
-
-            if (property is UIControllerProperty<Vector3> vector3Property)
-            {
-                return vector3Property.GetTargetValue();
-            }
-
-            if (property is UIControllerProperty<Color> colorProperty)
-            {
-                return colorProperty.GetTargetValue();
-            }
-
-            return null;
-        }
-
-        private void SetPropertyTargetValue(UIControllerProperty property, object value)
-        {
-            if (property is UIControllerProperty<bool> boolProperty && value is bool boolValue)
-            {
-                boolProperty.SetTargetValue(boolValue);
-            }
-            else if (property is UIControllerProperty<float> floatProperty && value is float floatValue)
-            {
-                floatProperty.SetTargetValue(floatValue);
-            }
-            else if (property is UIControllerProperty<string> stringProperty && value is string stringValue)
-            {
-                stringProperty.SetTargetValue(stringValue);
-            }
-            else if (property is UIControllerProperty<Vector2> vector2Property && value is Vector2 vector2Value)
-            {
-                vector2Property.SetTargetValue(vector2Value);
-            }
-            else if (property is UIControllerProperty<Vector3> vector3Property && value is Vector3 vector3Value)
-            {
-                vector3Property.SetTargetValue(vector3Value);
-            }
-            else if (property is UIControllerProperty<Color> colorProperty && value is Color colorValue)
-            {
-                colorProperty.SetTargetValue(colorValue);
-            }
         }
 
         private void AddControllerTarget(UIControllerData controllerData)
@@ -1212,7 +985,6 @@ namespace Windsmoon.UIController.Editor
             {
                 _lastMigrationWarningList.Clear();
                 _lastMigrationWarningList.AddRange(_uiControllerPanel.MigrateLegacyDataToControllerTargets());
-                ClearAllPropertyEditStates();
             });
 
             for (int i = 0; i < _lastMigrationWarningList.Count; i++)
