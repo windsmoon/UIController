@@ -24,7 +24,8 @@ namespace Windsmoon.UIController.Editor
         private int _currentControllerIndex = -1;
         private Vector2 _scrollPosition;
         private bool _pendingAnimatedShowDirty;
-        private readonly Dictionary<string, bool> _stateExpandedDict = new Dictionary<string, bool>();
+        private readonly Dictionary<string, bool> _targetExpandedDict = new Dictionary<string, bool>();
+        private readonly Dictionary<int, int> _currentStateIndexDict = new Dictionary<int, int>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
         #endregion
 
@@ -135,7 +136,8 @@ namespace Windsmoon.UIController.Editor
         {
             _scrollPosition = Vector2.zero;
             _pendingAnimatedShowDirty = false;
-            _stateExpandedDict.Clear();
+            _targetExpandedDict.Clear();
+            _currentStateIndexDict.Clear();
             _lastMigrationWarningList.Clear();
         }
 
@@ -246,7 +248,14 @@ namespace Windsmoon.UIController.Editor
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
+                string targetKey = GetTargetKey(targetIndex);
+                bool isExpanded = GetTargetExpanded(targetKey);
+                bool newExpanded = EditorGUILayout.Foldout(isExpanded, GetTargetDisplayName(targetData, targetIndex), true);
+                if (newExpanded != isExpanded)
+                {
+                    _targetExpandedDict[targetKey] = newExpanded;
+                }
+
                 GUILayout.FlexibleSpace();
                 GUILayout.Label($"{targetData.PropertyNameList.Count} properties", EditorStyles.miniLabel);
                 if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
@@ -259,13 +268,16 @@ namespace Windsmoon.UIController.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                DrawTargetDefinition(controllerData, targetIndex, targetData);
-                EditorGUILayout.Space(4f);
-                DrawControllerPropertyList(controllerData, targetIndex, targetData);
-
-                if (targetData.RectTransform == null && targetData.PropertyNameList.Count > 0)
+                if (newExpanded)
                 {
-                    EditorGUILayout.HelpBox("This target has properties but no RectTransform.", MessageType.Error);
+                    DrawTargetDefinition(controllerData, targetIndex, targetData);
+                    EditorGUILayout.Space(4f);
+                    DrawControllerPropertyList(controllerData, targetIndex, targetData);
+
+                    if (targetData.RectTransform == null && targetData.PropertyNameList.Count > 0)
+                    {
+                        EditorGUILayout.HelpBox("This target has properties but no RectTransform.", MessageType.Error);
+                    }
                 }
 
                 EditorGUILayout.EndVertical();
@@ -394,74 +406,85 @@ namespace Windsmoon.UIController.Editor
             if (stateList.Count == 0)
             {
                 EditorGUILayout.HelpBox("Add at least one state to edit per-state values.", MessageType.Info);
-            }
-
-            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
-            {
-                UIControllerStateData stateData = stateList[stateIndex];
-                if (stateData == null)
+                if (GUILayout.Button("+ Add State", GUILayout.Height(30f)))
                 {
-                    int capturedIndex = stateIndex;
-                    ApplyMutation("Repair UIController State", () => controllerData.StateList[capturedIndex] = new UIControllerStateData());
-                    return;
-                }
-
-                string stateKey = GetStateKey(stateIndex);
-                bool isExpanded = GetStateExpanded(stateKey);
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.BeginHorizontal();
-                bool newExpanded = EditorGUILayout.Foldout(isExpanded, $"State {stateIndex}", true);
-                if (newExpanded != isExpanded)
-                {
-                    _stateExpandedDict[stateKey] = newExpanded;
-                }
-
-                using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(controllerData.Name)))
-                {
-                    if (GUILayout.Button("Show", GUILayout.Width(ShowButtonWidth)))
+                    ApplyMutation("Add UIController State", () =>
                     {
-                        ShowState(controllerData, stateIndex);
-                    }
+                        UIControllerStateData stateData = new UIControllerStateData();
+                        controllerData.StateList.Add(stateData);
+                        SyncControllerStructure(controllerData);
+                    });
+                    SetCurrentStateIndex(0);
                 }
 
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(BuildStateSummary(controllerData, stateData), EditorStyles.miniLabel);
-                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
-                {
-                    int capturedIndex = stateIndex;
-                    ApplyMutation("Delete UIController State", () => controllerData.StateList.RemoveAt(capturedIndex));
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.EndVertical();
-                    return;
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUI.BeginChangeCheck();
-                string newComment = EditorGUILayout.TextField("Comment", stateData.Comment ?? string.Empty);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    string capturedComment = newComment;
-                    ApplyMutation("Edit UIController State Comment", () => stateData.Comment = capturedComment);
-                }
-
-                if (newExpanded)
-                {
-                    DrawStateTargetList(controllerData, stateData, stateIndex);
-                }
-
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.Space(4f);
+                return;
             }
+
+            int currentStateIndex = GetCurrentStateIndex(stateList.Count);
+            UIControllerStateData stateData = stateList[currentStateIndex];
+            if (stateData == null)
+            {
+                int capturedIndex = currentStateIndex;
+                ApplyMutation("Repair UIController State", () => controllerData.StateList[capturedIndex] = new UIControllerStateData());
+                return;
+            }
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("State", GUILayout.Width(RowLabelWidth));
+            int newStateIndex = EditorGUILayout.Popup(currentStateIndex, GetStateOptions(stateList), GUILayout.MinWidth(180f));
+            if (newStateIndex != currentStateIndex)
+            {
+                currentStateIndex = newStateIndex;
+                SetCurrentStateIndex(currentStateIndex);
+                stateData = stateList[currentStateIndex];
+            }
+
+            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(controllerData.Name)))
+            {
+                if (GUILayout.Button("Show", GUILayout.Width(ShowButtonWidth)))
+                {
+                    ShowState(controllerData, currentStateIndex);
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(BuildStateSummary(controllerData, stateData), EditorStyles.miniLabel);
+            if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+            {
+                int capturedIndex = currentStateIndex;
+                ApplyMutation("Delete UIController State", () =>
+                {
+                    controllerData.StateList.RemoveAt(capturedIndex);
+                    int nextStateIndex = controllerData.StateList.Count == 0 ? 0 : Mathf.Clamp(capturedIndex, 0, controllerData.StateList.Count - 1);
+                    SetCurrentStateIndex(nextStateIndex);
+                });
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+                return;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+            string newComment = EditorGUILayout.TextField("Comment", stateData.Comment ?? string.Empty);
+            if (EditorGUI.EndChangeCheck())
+            {
+                string capturedComment = newComment;
+                ApplyMutation("Edit UIController State Comment", () => stateData.Comment = capturedComment);
+            }
+
+            DrawStateTargetList(controllerData, stateData, currentStateIndex);
+            EditorGUILayout.EndVertical();
 
             if (GUILayout.Button("+ Add State", GUILayout.Height(30f)))
             {
                 ApplyMutation("Add UIController State", () =>
                 {
-                    UIControllerStateData stateData = new UIControllerStateData();
-                    controllerData.StateList.Add(stateData);
+                    UIControllerStateData newStateData = new UIControllerStateData();
+                    controllerData.StateList.Add(newStateData);
                     SyncControllerStructure(controllerData);
+                    SetCurrentStateIndex(controllerData.StateList.Count - 1);
                 });
-                _stateExpandedDict[GetStateKey(stateList.Count - 1)] = true;
             }
         }
 
@@ -1175,20 +1198,55 @@ namespace Windsmoon.UIController.Editor
             return targetData.RectTransform == null ? $"Target {index + 1}" : targetData.RectTransform.name;
         }
 
-        private string GetStateKey(int stateIndex)
+        private string GetTargetKey(int targetIndex)
         {
-            return $"{_currentControllerIndex}:{stateIndex}";
+            return $"{_currentControllerIndex}:{targetIndex}";
         }
 
-        private bool GetStateExpanded(string stateKey)
+        private bool GetTargetExpanded(string targetKey)
         {
-            if (_stateExpandedDict.TryGetValue(stateKey, out bool isExpanded))
+            if (_targetExpandedDict.TryGetValue(targetKey, out bool isExpanded))
             {
                 return isExpanded;
             }
 
-            _stateExpandedDict[stateKey] = true;
+            _targetExpandedDict[targetKey] = true;
             return true;
+        }
+
+        private int GetCurrentStateIndex(int stateCount)
+        {
+            if (stateCount <= 0)
+            {
+                return 0;
+            }
+
+            if (_currentStateIndexDict.TryGetValue(_currentControllerIndex, out int stateIndex))
+            {
+                stateIndex = Mathf.Clamp(stateIndex, 0, stateCount - 1);
+                _currentStateIndexDict[_currentControllerIndex] = stateIndex;
+                return stateIndex;
+            }
+
+            _currentStateIndexDict[_currentControllerIndex] = 0;
+            return 0;
+        }
+
+        private void SetCurrentStateIndex(int stateIndex)
+        {
+            _currentStateIndexDict[_currentControllerIndex] = Mathf.Max(0, stateIndex);
+        }
+
+        private string[] GetStateOptions(List<UIControllerStateData> stateList)
+        {
+            string[] options = new string[stateList.Count];
+            for (int i = 0; i < stateList.Count; i++)
+            {
+                string comment = stateList[i]?.Comment;
+                options[i] = string.IsNullOrWhiteSpace(comment) ? $"State {i}" : $"State {i} - {comment}";
+            }
+
+            return options;
         }
 
         private string BuildStateSummary(UIControllerData controllerData, UIControllerStateData stateData)
