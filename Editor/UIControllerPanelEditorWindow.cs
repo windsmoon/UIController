@@ -34,6 +34,8 @@ namespace Windsmoon.UIController.Editor
         private GUIStyle _controllerTargetHeaderStyle;
         private GUIStyle _targetHeaderSummaryStyle;
         private GUIStyle _primaryAddButtonStyle;
+        private GUIStyle _invalidPropertyPopupStyle;
+        private GUIStyle _invalidPropertyDeleteButtonStyle;
         private GUIStyle _stateTargetBoxStyle;
         private GUIStyle _statePropertyBoxStyle;
         private GUIStyle _stateTargetHeaderStyle;
@@ -375,7 +377,7 @@ namespace Windsmoon.UIController.Editor
                     int currentSlotIndex = slotIndex + columnIndex;
                     if (currentSlotIndex < propertyNameList.Count)
                     {
-                        if (DrawControllerPropertySlot(controllerData, targetIndex, propertyNameList, currentSlotIndex))
+                        if (DrawControllerPropertySlot(controllerData, targetIndex, targetData, propertyNameList, currentSlotIndex))
                         {
                             EditorGUILayout.EndHorizontal();
                             return;
@@ -398,11 +400,12 @@ namespace Windsmoon.UIController.Editor
             DrawControllerPropertyValidation(propertyNameList);
         }
 
-        private bool DrawControllerPropertySlot(UIControllerData controllerData, int targetIndex, List<string> propertyNameList, int propertyIndex)
+        private bool DrawControllerPropertySlot(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData, List<string> propertyNameList, int propertyIndex)
         {
             string propertyName = propertyNameList[propertyIndex];
+            bool isInvalidOnTarget = IsControllerPropertyInvalidOnTarget(targetData, propertyName);
             EditorGUILayout.BeginHorizontal(GUILayout.Width(PropertySlotWidth));
-            if (DrawPropertyDefinitionPopup(propertyNameList, propertyIndex, propertyName, out string newPropertyName))
+            if (DrawPropertyDefinitionPopup(propertyNameList, propertyIndex, propertyName, isInvalidOnTarget, out string newPropertyName))
             {
                 int capturedPropertyIndex = propertyIndex;
                 string capturedPropertyName = newPropertyName;
@@ -411,7 +414,8 @@ namespace Windsmoon.UIController.Editor
                 return true;
             }
 
-            if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+            GUIStyle deleteButtonStyle = isInvalidOnTarget ? _invalidPropertyDeleteButtonStyle : EditorStyles.miniButton;
+            if (GUILayout.Button("X", deleteButtonStyle, GUILayout.Width(DeleteButtonWidth)))
             {
                 int capturedPropertyIndex = propertyIndex;
                 ApplyMutation("Delete UIController Property", () => DeleteControllerProperty(controllerData, targetIndex, capturedPropertyIndex));
@@ -421,6 +425,23 @@ namespace Windsmoon.UIController.Editor
 
             EditorGUILayout.EndHorizontal();
             return false;
+        }
+
+        private bool IsControllerPropertyInvalidOnTarget(UIControllerTargetData targetData, string propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                return true;
+            }
+
+            UIControllerProperty property = UIControllerPropertyFactory.Create(propertyName);
+            if (property == null)
+            {
+                return true;
+            }
+
+            RectTransform rectTransform = targetData.RectTransform;
+            return rectTransform != null && property.IsValid(rectTransform, out _) == false;
         }
 
         private bool DrawAddControllerPropertySlot(UIControllerData controllerData, int targetIndex, List<UIControllerPropertyDefinition> availableDefinitionList)
@@ -460,23 +481,24 @@ namespace Windsmoon.UIController.Editor
             return Mathf.Max(1, Mathf.FloorToInt((availableWidth + PropertySlotSpacing) / (PropertySlotWidth + PropertySlotSpacing)));
         }
 
-        private bool DrawPropertyDefinitionPopup(List<string> propertyNameList, int propertyIndex, string propertyName, out string newPropertyName)
+        private bool DrawPropertyDefinitionPopup(List<string> propertyNameList, int propertyIndex, string propertyName, bool isInvalidOnTarget, out string newPropertyName)
         {
             newPropertyName = propertyName;
             List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyNameList, propertyIndex);
             int currentDefinitionIndex = GetPropertyDefinitionIndex(availableDefinitionList, propertyName);
+            GUIStyle popupStyle = isInvalidOnTarget ? _invalidPropertyPopupStyle : EditorStyles.popup;
             if (currentDefinitionIndex < 0)
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.Popup(0, new[] { string.IsNullOrWhiteSpace(propertyName) ? "<Missing Property>" : propertyName }, GUILayout.Width(PropertyPopupWidth));
+                    EditorGUILayout.Popup(0, new[] { string.IsNullOrWhiteSpace(propertyName) ? "<Missing Property>" : propertyName }, popupStyle, GUILayout.Width(PropertyPopupWidth));
                 }
 
                 return false;
             }
 
             string[] options = GetPropertyOptions(availableDefinitionList);
-            int newIndex = EditorGUILayout.Popup(currentDefinitionIndex, options, GUILayout.Width(PropertyPopupWidth));
+            int newIndex = EditorGUILayout.Popup(currentDefinitionIndex, options, popupStyle, GUILayout.Width(PropertyPopupWidth));
             if (newIndex == currentDefinitionIndex)
             {
                 return false;
@@ -1356,6 +1378,34 @@ namespace Windsmoon.UIController.Editor
                     background = CreateColorTexture(new Color(0.20f, 0.40f, 0.72f, 1f)),
                     textColor = Color.white
                 }
+            };
+
+            Color invalidColor = EditorGUIUtility.isProSkin
+                ? new Color(1f, 0.42f, 0.42f, 1f)
+                : new Color(0.82f, 0.08f, 0.08f, 1f);
+            _invalidPropertyPopupStyle = new GUIStyle(EditorStyles.popup)
+            {
+                normal = { textColor = invalidColor },
+                hover = { textColor = invalidColor },
+                active = { textColor = invalidColor },
+                focused = { textColor = invalidColor },
+                onNormal = { textColor = invalidColor },
+                onHover = { textColor = invalidColor },
+                onActive = { textColor = invalidColor },
+                onFocused = { textColor = invalidColor }
+            };
+
+            _invalidPropertyDeleteButtonStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = invalidColor },
+                hover = { textColor = invalidColor },
+                active = { textColor = invalidColor },
+                focused = { textColor = invalidColor },
+                onNormal = { textColor = invalidColor },
+                onHover = { textColor = invalidColor },
+                onActive = { textColor = invalidColor },
+                onFocused = { textColor = invalidColor }
             };
 
             _stateTargetBoxStyle = new GUIStyle(EditorStyles.helpBox)
