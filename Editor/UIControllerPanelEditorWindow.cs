@@ -29,6 +29,12 @@ namespace Windsmoon.UIController.Editor
         private readonly Dictionary<int, bool> _targetSectionExpandedDict = new Dictionary<int, bool>();
         private readonly Dictionary<int, int> _currentStateIndexDict = new Dictionary<int, int>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
+        private GUIStyle _sectionBoxStyle;
+        private GUIStyle _sectionHeaderStyle;
+        private GUIStyle _controllerTargetBoxStyle;
+        private GUIStyle _controllerTargetHeaderStyle;
+        private GUIStyle _targetHeaderSummaryStyle;
+        private GUIStyle _primaryAddButtonStyle;
         private GUIStyle _stateTargetBoxStyle;
         private GUIStyle _statePropertyBoxStyle;
         private GUIStyle _stateTargetHeaderStyle;
@@ -227,16 +233,23 @@ namespace Windsmoon.UIController.Editor
                 return;
             }
 
+            DrawControllerTargetSection(controllerData);
+            EditorGUILayout.Space(18f);
+            DrawStateSection(controllerData);
+        }
+
+        private void DrawControllerTargetSection(UIControllerData controllerData)
+        {
+            EditorGUILayout.BeginVertical(_sectionBoxStyle);
             DrawControllerTargetList(controllerData);
-            EditorGUILayout.Space(8f);
-            DrawStateList(controllerData);
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawControllerTargetList(UIControllerData controllerData)
         {
             List<UIControllerTargetData> targetList = controllerData.TargetList;
             bool isSectionExpanded = GetTargetSectionExpanded();
-            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal(_sectionHeaderStyle);
             bool newSectionExpanded = EditorGUILayout.Foldout(isSectionExpanded, "Controller Targets", true);
             if (newSectionExpanded != isSectionExpanded)
             {
@@ -267,20 +280,14 @@ namespace Windsmoon.UIController.Editor
                     return;
                 }
 
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
-                GUILayout.Label($"{targetData.PropertyNameList.Count} properties", EditorStyles.miniLabel);
-                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+                EditorGUILayout.BeginVertical(_controllerTargetBoxStyle);
+                if (DrawControllerTargetHeader(targetData, targetIndex))
                 {
                     int capturedIndex = targetIndex;
                     ApplyMutation("Delete UIController Target", () => DeleteControllerTarget(controllerData, capturedIndex));
-                    EditorGUILayout.EndHorizontal();
                     EditorGUILayout.EndVertical();
                     return;
                 }
-                EditorGUILayout.EndHorizontal();
 
                 DrawTargetDefinition(controllerData, targetIndex, targetData);
                 EditorGUILayout.Space(4f);
@@ -292,13 +299,28 @@ namespace Windsmoon.UIController.Editor
                 }
 
                 EditorGUILayout.EndVertical();
-                EditorGUILayout.Space(4f);
             }
 
-            if (GUILayout.Button("+ Add Target", GUILayout.Height(28f)))
+            if (GUILayout.Button("+ Add Target", _primaryAddButtonStyle, GUILayout.Height(32f)))
             {
                 ApplyMutation("Add UIController Target", () => AddControllerTarget(controllerData));
             }
+        }
+
+        private bool DrawControllerTargetHeader(UIControllerTargetData targetData, int targetIndex)
+        {
+            Rect headerRect = EditorGUILayout.GetControlRect(false, 26f);
+            EditorGUI.DrawRect(headerRect, GetStateTargetHeaderColor());
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 4f, headerRect.height), GetStateTargetAccentColor());
+
+            Rect labelRect = new Rect(headerRect.x + 10f, headerRect.y + 3f, headerRect.width - 156f, 20f);
+            GUI.Label(labelRect, GetTargetDisplayName(targetData, targetIndex), _controllerTargetHeaderStyle);
+
+            Rect summaryRect = new Rect(headerRect.xMax - 142f, headerRect.y + 3f, 100f, 20f);
+            GUI.Label(summaryRect, $"{targetData.PropertyNameList.Count} properties", _targetHeaderSummaryStyle);
+
+            Rect deleteRect = new Rect(headerRect.xMax - DeleteButtonWidth - 8f, headerRect.y + 3f, DeleteButtonWidth, 20f);
+            return GUI.Button(deleteRect, "X", EditorStyles.miniButton);
         }
 
         private void DrawTargetDefinition(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData)
@@ -468,12 +490,16 @@ namespace Windsmoon.UIController.Editor
         private void DrawStateList(UIControllerData controllerData)
         {
             List<UIControllerStateData> stateList = controllerData.StateList;
-            DrawSectionHeader("States", $"{stateList.Count} states");
+            EditorGUILayout.BeginHorizontal(_sectionHeaderStyle);
+            EditorGUILayout.LabelField("States", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label($"{stateList.Count} states", EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
 
             if (stateList.Count == 0)
             {
                 EditorGUILayout.HelpBox("Add at least one state to edit per-state values.", MessageType.Info);
-                if (GUILayout.Button("+ Add State", GUILayout.Height(30f)))
+                if (GUILayout.Button("+ Add State", _primaryAddButtonStyle, GUILayout.Height(32f)))
                 {
                     ApplyMutation("Add UIController State", () =>
                     {
@@ -543,7 +569,7 @@ namespace Windsmoon.UIController.Editor
             DrawStateTargetList(controllerData, stateData, currentStateIndex);
             EditorGUILayout.EndVertical();
 
-            if (GUILayout.Button("+ Add State", GUILayout.Height(30f)))
+            if (GUILayout.Button("+ Add State", _primaryAddButtonStyle, GUILayout.Height(32f)))
             {
                 ApplyMutation("Add UIController State", () =>
                 {
@@ -553,6 +579,13 @@ namespace Windsmoon.UIController.Editor
                     SetCurrentStateIndex(controllerData.StateList.Count - 1);
                 });
             }
+        }
+
+        private void DrawStateSection(UIControllerData controllerData)
+        {
+            EditorGUILayout.BeginVertical(_sectionBoxStyle);
+            DrawStateList(controllerData);
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawStateTargetList(UIControllerData controllerData, UIControllerStateData stateData, int stateIndex)
@@ -1268,10 +1301,74 @@ namespace Windsmoon.UIController.Editor
 
         private void EnsureStyles()
         {
-            if (_stateTargetBoxStyle != null)
+            if (_sectionBoxStyle != null)
             {
                 return;
             }
+
+            _sectionBoxStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(0, 0, 8, 12),
+                padding = new RectOffset(10, 10, 8, 10)
+            };
+
+            _sectionHeaderStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(0, 0, 0, 8),
+                padding = new RectOffset(8, 8, 5, 5)
+            };
+
+            _controllerTargetBoxStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(0, 0, 6, 12),
+                padding = new RectOffset(10, 10, 8, 10)
+            };
+
+            _controllerTargetHeaderStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                margin = new RectOffset(0, 0, 0, 8),
+                padding = new RectOffset(8, 8, 4, 4),
+                fontStyle = FontStyle.Bold,
+                normal =
+                {
+                    textColor = EditorGUIUtility.isProSkin
+                        ? new Color(0.95f, 0.97f, 1f, 1f)
+                        : new Color(0.12f, 0.18f, 0.28f, 1f)
+                }
+            };
+
+            _targetHeaderSummaryStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleRight,
+                normal =
+                {
+                    textColor = EditorGUIUtility.isProSkin
+                        ? new Color(0.80f, 0.88f, 1f, 1f)
+                        : new Color(0.16f, 0.28f, 0.44f, 1f)
+                }
+            };
+
+            _primaryAddButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal =
+                {
+                    background = CreateColorTexture(new Color(0.26f, 0.48f, 0.82f, 1f)),
+                    textColor = Color.white
+                },
+                hover =
+                {
+                    background = CreateColorTexture(new Color(0.31f, 0.55f, 0.90f, 1f)),
+                    textColor = Color.white
+                },
+                active =
+                {
+                    background = CreateColorTexture(new Color(0.20f, 0.40f, 0.72f, 1f)),
+                    textColor = Color.white
+                }
+            };
 
             _stateTargetBoxStyle = new GUIStyle(EditorStyles.helpBox)
             {
@@ -1309,6 +1406,17 @@ namespace Windsmoon.UIController.Editor
             return EditorGUIUtility.isProSkin
                 ? new Color(0.36f, 0.58f, 0.90f, 1f)
                 : new Color(0.20f, 0.42f, 0.72f, 1f);
+        }
+
+        private Texture2D CreateColorTexture(Color color)
+        {
+            Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            texture.SetPixel(0, 0, color);
+            texture.Apply();
+            return texture;
         }
 
         private string GetControllerDisplayName(string controllerName, int index)
