@@ -24,7 +24,7 @@ namespace Windsmoon.UIController.Editor
         private int _currentControllerIndex = -1;
         private Vector2 _scrollPosition;
         private bool _pendingAnimatedShowDirty;
-        private readonly Dictionary<string, bool> _targetExpandedDict = new Dictionary<string, bool>();
+        private readonly Dictionary<int, bool> _targetSectionExpandedDict = new Dictionary<int, bool>();
         private readonly Dictionary<int, int> _currentStateIndexDict = new Dictionary<int, int>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
         #endregion
@@ -136,7 +136,7 @@ namespace Windsmoon.UIController.Editor
         {
             _scrollPosition = Vector2.zero;
             _pendingAnimatedShowDirty = false;
-            _targetExpandedDict.Clear();
+            _targetSectionExpandedDict.Clear();
             _currentStateIndexDict.Clear();
             _lastMigrationWarningList.Clear();
         }
@@ -229,7 +229,22 @@ namespace Windsmoon.UIController.Editor
         private void DrawControllerTargetList(UIControllerData controllerData)
         {
             List<UIControllerTargetData> targetList = controllerData.TargetList;
-            DrawSectionHeader("Controller Targets", $"{targetList.Count} targets");
+            bool isSectionExpanded = GetTargetSectionExpanded();
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            bool newSectionExpanded = EditorGUILayout.Foldout(isSectionExpanded, "Controller Targets", true);
+            if (newSectionExpanded != isSectionExpanded)
+            {
+                _targetSectionExpandedDict[_currentControllerIndex] = newSectionExpanded;
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.Label($"{targetList.Count} targets", EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            if (newSectionExpanded == false)
+            {
+                return;
+            }
 
             if (targetList.Count == 0)
             {
@@ -248,14 +263,7 @@ namespace Windsmoon.UIController.Editor
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.BeginHorizontal();
-                string targetKey = GetTargetKey(targetIndex);
-                bool isExpanded = GetTargetExpanded(targetKey);
-                bool newExpanded = EditorGUILayout.Foldout(isExpanded, GetTargetDisplayName(targetData, targetIndex), true);
-                if (newExpanded != isExpanded)
-                {
-                    _targetExpandedDict[targetKey] = newExpanded;
-                }
-
+                EditorGUILayout.LabelField(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
                 GUILayout.Label($"{targetData.PropertyNameList.Count} properties", EditorStyles.miniLabel);
                 if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
@@ -268,16 +276,13 @@ namespace Windsmoon.UIController.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                if (newExpanded)
-                {
-                    DrawTargetDefinition(controllerData, targetIndex, targetData);
-                    EditorGUILayout.Space(4f);
-                    DrawControllerPropertyList(controllerData, targetIndex, targetData);
+                DrawTargetDefinition(controllerData, targetIndex, targetData);
+                EditorGUILayout.Space(4f);
+                DrawControllerPropertyList(controllerData, targetIndex, targetData);
 
-                    if (targetData.RectTransform == null && targetData.PropertyNameList.Count > 0)
-                    {
-                        EditorGUILayout.HelpBox("This target has properties but no RectTransform.", MessageType.Error);
-                    }
+                if (targetData.RectTransform == null && targetData.PropertyNameList.Count > 0)
+                {
+                    EditorGUILayout.HelpBox("This target has properties but no RectTransform.", MessageType.Error);
                 }
 
                 EditorGUILayout.EndVertical();
@@ -1198,19 +1203,14 @@ namespace Windsmoon.UIController.Editor
             return targetData.RectTransform == null ? $"Target {index + 1}" : targetData.RectTransform.name;
         }
 
-        private string GetTargetKey(int targetIndex)
+        private bool GetTargetSectionExpanded()
         {
-            return $"{_currentControllerIndex}:{targetIndex}";
-        }
-
-        private bool GetTargetExpanded(string targetKey)
-        {
-            if (_targetExpandedDict.TryGetValue(targetKey, out bool isExpanded))
+            if (_targetSectionExpandedDict.TryGetValue(_currentControllerIndex, out bool isExpanded))
             {
                 return isExpanded;
             }
 
-            _targetExpandedDict[targetKey] = true;
+            _targetSectionExpandedDict[_currentControllerIndex] = true;
             return true;
         }
 
