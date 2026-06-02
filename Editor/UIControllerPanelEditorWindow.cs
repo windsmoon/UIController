@@ -29,6 +29,9 @@ namespace Windsmoon.UIController.Editor
         private readonly Dictionary<int, bool> _targetSectionExpandedDict = new Dictionary<int, bool>();
         private readonly Dictionary<int, int> _currentStateIndexDict = new Dictionary<int, int>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
+        private GUIStyle _stateTargetBoxStyle;
+        private GUIStyle _statePropertyBoxStyle;
+        private GUIStyle _stateTargetHeaderStyle;
         #endregion
 
         #region methods
@@ -84,6 +87,7 @@ namespace Windsmoon.UIController.Editor
 
         private void OnGUI()
         {
+            EnsureStyles();
             if (_uiControllerPanel == null)
             {
                 EditorGUILayout.HelpBox("Select a UIControllerPanel and open a controller from the inspector.", MessageType.Info);
@@ -564,19 +568,36 @@ namespace Windsmoon.UIController.Editor
             {
                 UIControllerTargetData targetData = targetList[targetIndex];
                 UIControllerTargetStateData targetStateData = stateData.TargetStateList[targetIndex];
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Label(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
-                using (new EditorGUI.DisabledScope(true))
+                if (targetIndex > 0)
                 {
-                    EditorGUILayout.ObjectField(targetData.RectTransform, typeof(RectTransform), true, GUILayout.Width(220f));
+                    EditorGUILayout.Space(8f);
                 }
-                EditorGUILayout.EndHorizontal();
 
+                EditorGUILayout.BeginVertical(_stateTargetBoxStyle);
+                DrawStateTargetHeader(targetData, targetIndex);
                 DrawStatePropertyList(stateIndex, targetIndex, targetData, targetStateData);
                 EditorGUILayout.EndVertical();
             }
+        }
+
+        private void DrawStateTargetHeader(UIControllerTargetData targetData, int targetIndex)
+        {
+            Rect headerRect = EditorGUILayout.GetControlRect(false, 26f);
+            EditorGUI.DrawRect(headerRect, GetStateTargetHeaderColor());
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 4f, headerRect.height), GetStateTargetAccentColor());
+
+            Rect labelRect = new Rect(headerRect.x + 10f, headerRect.y + 3f, headerRect.width - 18f, 20f);
+            if (headerRect.width > 360f)
+            {
+                Rect objectRect = new Rect(headerRect.xMax - 228f, headerRect.y + 3f, 220f, 20f);
+                labelRect.width = Mathf.Max(80f, objectRect.x - labelRect.x - 8f);
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUI.ObjectField(objectRect, targetData?.RectTransform, typeof(RectTransform), true);
+                }
+            }
+
+            GUI.Label(labelRect, GetTargetDisplayName(targetData, targetIndex), _stateTargetHeaderStyle);
         }
 
         private void DrawStatePropertyList(int stateIndex, int targetIndex, UIControllerTargetData targetData, UIControllerTargetStateData targetStateData)
@@ -592,13 +613,17 @@ namespace Windsmoon.UIController.Editor
             {
                 string propertyName = propertyNameList[propertyIndex];
                 UIControllerProperty property = targetStateData.PropertyList[propertyIndex];
+                EditorGUILayout.BeginVertical(_statePropertyBoxStyle);
                 if (property == null)
                 {
                     EditorGUILayout.HelpBox($"{propertyName}: property data is missing and could not be created.", MessageType.Error);
+                    EditorGUILayout.EndVertical();
                     continue;
                 }
 
                 DrawPropertyRow(propertyName, property, targetData.RectTransform);
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(2f);
             }
         }
 
@@ -1239,6 +1264,51 @@ namespace Windsmoon.UIController.Editor
             GUILayout.FlexibleSpace();
             GUILayout.Label(summary, EditorStyles.miniLabel);
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void EnsureStyles()
+        {
+            if (_stateTargetBoxStyle != null)
+            {
+                return;
+            }
+
+            _stateTargetBoxStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(0, 0, 8, 10),
+                padding = new RectOffset(10, 10, 8, 10)
+            };
+
+            _statePropertyBoxStyle = new GUIStyle(EditorStyles.helpBox)
+            {
+                margin = new RectOffset(16, 2, 4, 4),
+                padding = new RectOffset(8, 8, 6, 6)
+            };
+
+            _stateTargetHeaderStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                normal =
+                {
+                    textColor = EditorGUIUtility.isProSkin
+                        ? new Color(0.95f, 0.97f, 1f, 1f)
+                        : new Color(0.12f, 0.18f, 0.28f, 1f)
+                }
+            };
+        }
+
+        private Color GetStateTargetHeaderColor()
+        {
+            return EditorGUIUtility.isProSkin
+                ? new Color(0.20f, 0.25f, 0.32f, 1f)
+                : new Color(0.78f, 0.86f, 0.96f, 1f);
+        }
+
+        private Color GetStateTargetAccentColor()
+        {
+            return EditorGUIUtility.isProSkin
+                ? new Color(0.36f, 0.58f, 0.90f, 1f)
+                : new Color(0.20f, 0.42f, 0.72f, 1f);
         }
 
         private string GetControllerDisplayName(string controllerName, int index)
