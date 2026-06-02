@@ -1334,11 +1334,9 @@ namespace Windsmoon.UIController.Editor
                 padding = new RectOffset(8, 8, 5, 5)
             };
 
-            _controllerTargetHeaderStyle = new GUIStyle(EditorStyles.helpBox)
+            _controllerTargetHeaderStyle = new GUIStyle(EditorStyles.boldLabel)
             {
                 alignment = TextAnchor.MiddleLeft,
-                margin = new RectOffset(0, 0, 0, 8),
-                padding = new RectOffset(8, 8, 4, 4),
                 fontStyle = FontStyle.Bold,
                 normal =
                 {
