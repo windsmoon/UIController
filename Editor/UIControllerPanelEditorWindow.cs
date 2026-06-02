@@ -31,7 +31,6 @@ namespace Windsmoon.UIController.Editor
         private readonly List<string> _lastMigrationWarningList = new List<string>();
         private GUIStyle _sectionBoxStyle;
         private GUIStyle _sectionHeaderStyle;
-        private GUIStyle _controllerTargetBoxStyle;
         private GUIStyle _controllerTargetHeaderStyle;
         private GUIStyle _targetHeaderSummaryStyle;
         private GUIStyle _primaryAddButtonStyle;
@@ -280,7 +279,7 @@ namespace Windsmoon.UIController.Editor
                     return;
                 }
 
-                EditorGUILayout.BeginVertical(_controllerTargetBoxStyle);
+                EditorGUILayout.BeginVertical(_stateTargetBoxStyle);
                 if (DrawControllerTargetHeader(targetData, targetIndex))
                 {
                     int capturedIndex = targetIndex;
@@ -601,11 +600,6 @@ namespace Windsmoon.UIController.Editor
             {
                 UIControllerTargetData targetData = targetList[targetIndex];
                 UIControllerTargetStateData targetStateData = stateData.TargetStateList[targetIndex];
-                if (targetIndex > 0)
-                {
-                    EditorGUILayout.Space(8f);
-                }
-
                 EditorGUILayout.BeginVertical(_stateTargetBoxStyle);
                 DrawStateTargetHeader(targetData, targetIndex);
                 DrawStatePropertyList(stateIndex, targetIndex, targetData, targetStateData);
@@ -1316,12 +1310,6 @@ namespace Windsmoon.UIController.Editor
             {
                 margin = new RectOffset(0, 0, 0, 8),
                 padding = new RectOffset(8, 8, 5, 5)
-            };
-
-            _controllerTargetBoxStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                margin = new RectOffset(0, 0, 6, 12),
-                padding = new RectOffset(10, 10, 8, 10)
             };
 
             _controllerTargetHeaderStyle = new GUIStyle(EditorStyles.helpBox)
