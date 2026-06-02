@@ -20,16 +20,10 @@ namespace Windsmoon.UIController.Editor
 
         private const float DeleteButtonWidth = 24f;
         private const float ShowButtonWidth = 56f;
-        private const float CaptureButtonWidth = 58f;
-        private const float CommentButtonWidth = 40f;
-        private const float PropertyPopupWidth = 160f;
-        private const float PopupArrowWidth = 18f;
-        private const float PopupArrowSize = 7f;
+        private const float CaptureButtonWidth = 68f;
+        private const float RowLabelWidth = 118f;
+        private const float PropertyPopupWidth = 170f;
         private const float AnimationToggleWidth = 88f;
-        private const float RowLabelWidth = 110f;
-        private const float StateBlockSpacing = 10f;
-        private const float TargetBlockSpacing = 8f;
-        private const float ExpandedStateContentSpacing = 6f;
 
         #region fields
         private UIControllerPanel _uiControllerPanel;
@@ -37,33 +31,11 @@ namespace Windsmoon.UIController.Editor
         private Vector2 _scrollPosition;
         private bool _pendingAnimatedShowDirty;
         private readonly Dictionary<string, bool> _stateExpandedDict = new Dictionary<string, bool>();
-        private readonly Dictionary<string, bool> _stateCommentEditingDict = new Dictionary<string, bool>();
-        private readonly Dictionary<string, string> _stateCommentBufferDict = new Dictionary<string, string>();
         private readonly Dictionary<string, bool> _propertyValueEditingDict = new Dictionary<string, bool>();
         private readonly Dictionary<string, object> _propertyValueBufferDict = new Dictionary<string, object>();
         private readonly Dictionary<string, bool> _propertyAnimationEditingDict = new Dictionary<string, bool>();
         private readonly Dictionary<string, PropertyAnimationBuffer> _propertyAnimationBufferDict = new Dictionary<string, PropertyAnimationBuffer>();
-        private readonly List<string> _controllerTargetNameList = new List<string>();
-        private GUIStyle _toolbarCardStyle;
-        private GUIStyle _headerCardStyle;
-        private GUIStyle _stateCardStyle;
-        private GUIStyle _targetCardStyle;
-        private GUIStyle _headerTitleStyle;
-        private GUIStyle _headerSubtitleStyle;
-        private GUIStyle _toolbarFieldStyle;
-        private GUIStyle _toolbarPopupStyle;
-        private GUIStyle _stateFoldoutStyle;
-        private GUIStyle _mutedLabelStyle;
-        private GUIStyle _rowLabelStyle;
-        private GUIStyle _summaryLabelStyle;
-        private GUIStyle _inlineValueLabelStyle;
-        private GUIStyle _showButtonStyle;
-        private GUIStyle _secondaryButtonStyle;
-        private GUIStyle _outlineButtonStyle;
-        private GUIStyle _outlineButtonDisabledStyle;
-        private GUIStyle _primaryAddButtonStyle;
-        private GUIStyle _iconButtonStyle;
-        private Color _popupArrowColor;
+        private readonly List<string> _lastMigrationWarningList = new List<string>();
         #endregion
 
         #region methods
@@ -76,7 +48,7 @@ namespace Windsmoon.UIController.Editor
         internal static void OpenWindow(UIControllerPanel uiControllerPanel, int controllerIndex)
         {
             UIControllerPanelEditorWindow window = GetWindow<UIControllerPanelEditorWindow>("UIController Panel");
-            window.minSize = new Vector2(640f, 420f);
+            window.minSize = new Vector2(680f, 440f);
             window.titleContent = new GUIContent("UIController Panel");
             window.ResetWindowState();
             window.SetUIControllerPanel(uiControllerPanel, controllerIndex);
@@ -85,7 +57,7 @@ namespace Windsmoon.UIController.Editor
 
         private void OnEnable()
         {
-            minSize = new Vector2(640f, 420f);
+            minSize = new Vector2(680f, 440f);
             titleContent = new GUIContent("UIController Panel");
             if (_uiControllerPanel == null)
             {
@@ -111,19 +83,14 @@ namespace Windsmoon.UIController.Editor
             }
 
             UIControllerPanel uiControllerPanel = GetSelectedUIControllerPanel();
-            if (uiControllerPanel == null)
+            if (uiControllerPanel != null)
             {
-                return;
+                SetUIControllerPanel(uiControllerPanel, 0);
             }
-
-            SetUIControllerPanel(uiControllerPanel, 0);
         }
 
         private void OnGUI()
         {
-            EnsureStyles();
-            DrawWindowBackground();
-
             if (_uiControllerPanel == null)
             {
                 EditorGUILayout.HelpBox("Select a UIControllerPanel and open a controller from the inspector.", MessageType.Info);
@@ -132,28 +99,20 @@ namespace Windsmoon.UIController.Editor
 
             RefreshPanelCaches();
             List<UIControllerData> controllerList = _uiControllerPanel.ControllerList;
-            if (controllerList == null || controllerList.Count == 0)
+            if (controllerList.Count == 0)
             {
+                DrawPanelHeader(controllerList);
                 EditorGUILayout.HelpBox("UIControllerPanel has no controller.", MessageType.Info);
                 return;
             }
 
             ValidateCurrentControllerIndex(controllerList);
-            RefreshControllerTargetNames();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(12f);
-            EditorGUILayout.BeginVertical();
-            GUILayout.Space(10f);
-            DrawToolbar(controllerList);
-            EditorGUILayout.Space(10f);
+            DrawPanelHeader(controllerList);
+            DrawMigrationNotice();
 
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
             DrawCurrentController(controllerList[_currentControllerIndex]);
             EditorGUILayout.EndScrollView();
-            EditorGUILayout.EndVertical();
-            GUILayout.Space(12f);
-            EditorGUILayout.EndHorizontal();
         }
 
         private void SetUIControllerPanel(UIControllerPanel uiControllerPanel, int controllerIndex)
@@ -187,12 +146,8 @@ namespace Windsmoon.UIController.Editor
             _scrollPosition = Vector2.zero;
             _pendingAnimatedShowDirty = false;
             _stateExpandedDict.Clear();
-            _stateCommentEditingDict.Clear();
-            _stateCommentBufferDict.Clear();
-            _propertyValueEditingDict.Clear();
-            _propertyValueBufferDict.Clear();
-            _propertyAnimationEditingDict.Clear();
-            _propertyAnimationBufferDict.Clear();
+            ClearAllPropertyEditStates();
+            _lastMigrationWarningList.Clear();
         }
 
         private static UIControllerPanel GetSelectedUIControllerPanel()
@@ -203,33 +158,35 @@ namespace Windsmoon.UIController.Editor
             }
 
             GameObject gameObject = Selection.activeGameObject;
-            if (gameObject == null)
-            {
-                return null;
-            }
-
-            return gameObject.GetComponent<UIControllerPanel>();
+            return gameObject == null ? null : gameObject.GetComponent<UIControllerPanel>();
         }
 
-        private void DrawToolbar(List<UIControllerData> controllerList)
+        private void DrawPanelHeader(List<UIControllerData> controllerList)
         {
-            EditorGUILayout.BeginVertical(_toolbarCardStyle);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(GetIconContent(_uiControllerPanel.name, "Prefab Icon", typeof(GameObject)), _toolbarFieldStyle, GUILayout.Width(220f), GUILayout.Height(28f));
-            GUILayout.Space(8f);
+            EditorGUILayout.LabelField(_uiControllerPanel.name, EditorStyles.boldLabel, GUILayout.MinWidth(180f));
 
-            string[] controllerOptions = GetControllerOptions(controllerList);
-            int newControllerIndex = EditorGUILayout.Popup(_currentControllerIndex, controllerOptions, _toolbarPopupStyle, GUILayout.MinWidth(220f), GUILayout.Height(28f));
-            DrawPopupArrow();
-            if (newControllerIndex != _currentControllerIndex)
+            if (controllerList.Count == 0)
             {
-                _currentControllerIndex = newControllerIndex;
-                _scrollPosition = Vector2.zero;
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.TextField("No Controllers", GUILayout.MinWidth(220f));
+                }
+            }
+            else
+            {
+                string[] controllerOptions = GetControllerOptions(controllerList);
+                int newControllerIndex = EditorGUILayout.Popup(_currentControllerIndex, controllerOptions, GUILayout.MinWidth(220f));
+                if (newControllerIndex != _currentControllerIndex)
+                {
+                    _currentControllerIndex = newControllerIndex;
+                    _scrollPosition = Vector2.zero;
+                }
             }
 
             GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("Ping Panel", _secondaryButtonStyle, GUILayout.Width(92f), GUILayout.Height(28f)))
+            if (GUILayout.Button("Ping Panel", GUILayout.Width(90f)))
             {
                 Selection.activeObject = _uiControllerPanel;
                 EditorGUIUtility.PingObject(_uiControllerPanel);
@@ -239,313 +196,349 @@ namespace Windsmoon.UIController.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private void DrawMigrationNotice()
+        {
+            if (_uiControllerPanel.NeedsLegacyMigration() == false)
+            {
+                if (_lastMigrationWarningList.Count > 0)
+                {
+                    EditorGUILayout.HelpBox($"Last migration completed with {_lastMigrationWarningList.Count} warning(s). Check Console for details.", MessageType.Warning);
+                }
+
+                return;
+            }
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.HelpBox("Legacy state-level target/property data was detected. Run manual migration before editing this controller.", MessageType.Warning);
+            if (GUILayout.Button("Migrate Legacy Data To Controller Targets"))
+            {
+                RunManualMigration();
+            }
+            EditorGUILayout.EndVertical();
+        }
+
         private void DrawCurrentController(UIControllerData controllerData)
         {
-            EditorGUILayout.BeginVertical(_headerCardStyle);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(GetIconContent(string.Empty, "Prefab Icon", typeof(GameObject)), GUILayout.Width(20f), GUILayout.Height(20f));
-            GUILayout.Space(2f);
-            EditorGUILayout.LabelField(GetControllerDisplayName(controllerData.Name, _currentControllerIndex), _headerTitleStyle);
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Use Show to preview a state. Use Capture on each property row to record current values.", _headerSubtitleStyle);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(GetControllerDisplayName(controllerData.Name, _currentControllerIndex), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Controller targets define the shared structure. States only edit values and animation settings.", EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
 
-            EditorGUILayout.Space(10f);
+            if (IsLegacyShape(controllerData))
+            {
+                EditorGUILayout.HelpBox("This controller still uses legacy state-level target data. Migrate it before editing.", MessageType.Warning);
+                return;
+            }
+
+            DrawControllerTargetList(controllerData);
+            EditorGUILayout.Space(8f);
             DrawStateList(controllerData);
         }
 
-        private void DrawStateList(UIControllerData controllerData)
+        private void DrawControllerTargetList(UIControllerData controllerData)
         {
-            List<UIControllerStateData> stateList = controllerData.StateList;
-            if (stateList.Count == 0)
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            DrawSectionHeader("Controller Targets", $"{targetList.Count} targets");
+
+            if (targetList.Count == 0)
             {
-                EditorGUILayout.HelpBox("Add at least one state to start previewing UI changes.", MessageType.Info);
+                EditorGUILayout.HelpBox("Add targets here. Every state will then get value rows for the same target/property structure.", MessageType.Info);
             }
 
-            for (int i = 0; i < stateList.Count; i++)
+            for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
             {
-                if (i > 0)
+                UIControllerTargetData targetData = targetList[targetIndex];
+                if (targetData == null)
                 {
-                    EditorGUILayout.Space(StateBlockSpacing);
+                    int capturedIndex = targetIndex;
+                    ApplyMutation("Repair UIController Target", () => controllerData.TargetList[capturedIndex] = new UIControllerTargetData());
+                    return;
                 }
 
-                UIControllerStateData stateData = stateList[i];
-                string stateKey = GetStateKey(i);
-                bool isExpanded = GetStateExpanded(stateKey);
-
-                BeginTintedHelpBox(i, false);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.BeginHorizontal();
-                bool newExpanded = EditorGUILayout.Foldout(isExpanded, $"State {stateData.Index}", true, _stateFoldoutStyle);
-                if (newExpanded != isExpanded)
-                {
-                    _stateExpandedDict[stateKey] = newExpanded;
-                }
-
-                GUILayout.Space(8f);
-                using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(controllerData.Name)))
-                {
-                    if (GUILayout.Button("Show", _showButtonStyle, GUILayout.Width(ShowButtonWidth), GUILayout.Height(24f)))
-                    {
-                        ShowState(controllerData, stateData);
-                    }
-                }
-
-                DrawStateComment(stateData, stateKey);
+                EditorGUILayout.LabelField(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(BuildStateSummary(stateData), _summaryLabelStyle);
-
-                if (GUILayout.Button("X", _iconButtonStyle, GUILayout.Width(DeleteButtonWidth), GUILayout.Height(24f)))
+                GUILayout.Label($"{targetData.PropertyNameList.Count} properties", EditorStyles.miniLabel);
+                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
                 {
-                    ApplyMutation("Delete UIController State", () =>
-                    {
-                        stateList.RemoveAt(i);
-                        SyncControllerStateIndexes();
-                    });
+                    int capturedIndex = targetIndex;
+                    ApplyMutation("Delete UIController Target", () => DeleteControllerTarget(controllerData, capturedIndex));
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.EndVertical();
+                    ClearAllPropertyEditStates();
+                    return;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                DrawTargetDefinition(controllerData, targetIndex, targetData);
+                EditorGUILayout.Space(4f);
+                DrawControllerPropertyList(controllerData, targetIndex, targetData);
+
+                if (targetData.RectTransform == null && targetData.PropertyNameList.Count > 0)
+                {
+                    EditorGUILayout.HelpBox("This target has properties but no RectTransform.", MessageType.Error);
+                }
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(4f);
+            }
+
+            if (GUILayout.Button("+ Add Target", GUILayout.Height(28f)))
+            {
+                ApplyMutation("Add UIController Target", () => AddControllerTarget(controllerData));
+            }
+        }
+
+        private void DrawTargetDefinition(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData)
+        {
+            string oldName = targetData.Name ?? string.Empty;
+            EditorGUI.BeginChangeCheck();
+            string newName = EditorGUILayout.TextField("Name", oldName);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ApplyMutation("Edit UIController Target Name", () => targetData.Name = newName);
+            }
+
+            RectTransform oldRectTransform = targetData.RectTransform;
+            EditorGUI.BeginChangeCheck();
+            RectTransform newRectTransform = (RectTransform)EditorGUILayout.ObjectField("RectTransform", oldRectTransform, typeof(RectTransform), true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ApplyMutation("Edit UIController Target RectTransform", () =>
+                {
+                    targetData.RectTransform = newRectTransform;
+                    if (string.IsNullOrWhiteSpace(targetData.Name) && newRectTransform != null)
+                    {
+                        targetData.Name = newRectTransform.name;
+                    }
+
+                    SyncControllerStructure(controllerData);
+                });
+            }
+        }
+
+        private void DrawControllerPropertyList(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData)
+        {
+            List<string> propertyNameList = targetData.PropertyNameList;
+            if (propertyNameList.Count == 0)
+            {
+                EditorGUILayout.HelpBox("No controlled properties for this target.", MessageType.Info);
+            }
+
+            for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
+            {
+                string propertyName = propertyNameList[propertyIndex];
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("Property", GUILayout.Width(RowLabelWidth));
+
+                if (DrawPropertyDefinitionPopup(propertyNameList, propertyIndex, propertyName, out string newPropertyName))
+                {
+                    int capturedPropertyIndex = propertyIndex;
+                    string capturedPropertyName = newPropertyName;
+                    ApplyMutation("Change UIController Property", () => ChangeControllerProperty(controllerData, targetIndex, capturedPropertyIndex, capturedPropertyName));
+                    EditorGUILayout.EndHorizontal();
+                    ClearAllPropertyEditStates();
+                    return;
+                }
+
+                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+                {
+                    int capturedPropertyIndex = propertyIndex;
+                    ApplyMutation("Delete UIController Property", () => DeleteControllerProperty(controllerData, targetIndex, capturedPropertyIndex));
+                    EditorGUILayout.EndHorizontal();
+                    ClearAllPropertyEditStates();
                     return;
                 }
 
                 EditorGUILayout.EndHorizontal();
 
+                if (string.IsNullOrWhiteSpace(propertyName))
+                {
+                    EditorGUILayout.HelpBox("Property name is empty.", MessageType.Error);
+                }
+                else if (UIControllerPropertyFactory.Create(propertyName) == null)
+                {
+                    EditorGUILayout.HelpBox($"Property {propertyName} is not registered in UIControllerPropertyFactory.", MessageType.Warning);
+                }
+            }
+
+            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyNameList, -1);
+            using (new EditorGUI.DisabledScope(availableDefinitionList.Count == 0))
+            {
+                if (GUILayout.Button("+ Add Property", GUILayout.Height(24f)))
+                {
+                    string propertyName = availableDefinitionList[0].Name;
+                    ApplyMutation("Add UIController Property", () => AddControllerProperty(controllerData, targetIndex, propertyName));
+                }
+            }
+        }
+
+        private bool DrawPropertyDefinitionPopup(List<string> propertyNameList, int propertyIndex, string propertyName, out string newPropertyName)
+        {
+            newPropertyName = propertyName;
+            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyNameList, propertyIndex);
+            int currentDefinitionIndex = GetPropertyDefinitionIndex(availableDefinitionList, propertyName);
+            if (currentDefinitionIndex < 0)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.Popup(0, new[] { string.IsNullOrWhiteSpace(propertyName) ? "<Missing Property>" : propertyName }, GUILayout.Width(PropertyPopupWidth));
+                }
+
+                return false;
+            }
+
+            string[] options = GetPropertyOptions(availableDefinitionList);
+            int newIndex = EditorGUILayout.Popup(currentDefinitionIndex, options, GUILayout.Width(PropertyPopupWidth));
+            if (newIndex == currentDefinitionIndex)
+            {
+                return false;
+            }
+
+            newPropertyName = availableDefinitionList[newIndex].Name;
+            return true;
+        }
+
+        private void DrawStateList(UIControllerData controllerData)
+        {
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            DrawSectionHeader("States", $"{stateList.Count} states");
+
+            if (stateList.Count == 0)
+            {
+                EditorGUILayout.HelpBox("Add at least one state to edit per-state values.", MessageType.Info);
+            }
+
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                if (stateData == null)
+                {
+                    int capturedIndex = stateIndex;
+                    ApplyMutation("Repair UIController State", () => controllerData.StateList[capturedIndex] = new UIControllerStateData());
+                    return;
+                }
+
+                string stateKey = GetStateKey(stateIndex);
+                bool isExpanded = GetStateExpanded(stateKey);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                bool newExpanded = EditorGUILayout.Foldout(isExpanded, $"State {stateIndex}", true);
+                if (newExpanded != isExpanded)
+                {
+                    _stateExpandedDict[stateKey] = newExpanded;
+                }
+
+                using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(controllerData.Name)))
+                {
+                    if (GUILayout.Button("Show", GUILayout.Width(ShowButtonWidth)))
+                    {
+                        ShowState(controllerData, stateIndex);
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(BuildStateSummary(controllerData, stateData), EditorStyles.miniLabel);
+                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+                {
+                    int capturedIndex = stateIndex;
+                    ApplyMutation("Delete UIController State", () => controllerData.StateList.RemoveAt(capturedIndex));
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    ClearAllPropertyEditStates();
+                    return;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUI.BeginChangeCheck();
+                string newComment = EditorGUILayout.TextField("Comment", stateData.Comment ?? string.Empty);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    string capturedComment = newComment;
+                    ApplyMutation("Edit UIController State Comment", () => stateData.Comment = capturedComment);
+                }
+
                 if (newExpanded)
                 {
-                    EditorGUILayout.Space(ExpandedStateContentSpacing);
-                    DrawTargetStateList(stateData);
+                    DrawStateTargetList(controllerData, stateData, stateIndex);
                 }
 
                 EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(4f);
             }
 
-            GUILayout.Space(10f);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("+ Add State", _primaryAddButtonStyle, GUILayout.Width(320f), GUILayout.Height(42f)))
+            if (GUILayout.Button("+ Add State", GUILayout.Height(30f)))
             {
                 ApplyMutation("Add UIController State", () =>
                 {
-                    stateList.Add(new UIControllerStateData());
-                    SyncControllerStateIndexes();
+                    UIControllerStateData stateData = new UIControllerStateData();
+                    controllerData.StateList.Add(stateData);
+                    SyncControllerStructure(controllerData);
                 });
                 _stateExpandedDict[GetStateKey(stateList.Count - 1)] = true;
             }
-
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-            GUILayout.Space(12f);
         }
 
-        private void DrawTargetStateList(UIControllerStateData stateData)
+        private void DrawStateTargetList(UIControllerData controllerData, UIControllerStateData stateData, int stateIndex)
         {
-            List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
-            DrawTargetStateListValidation(targetStateList);
-
-            if (targetStateList.Count == 0)
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            if (targetList.Count == 0)
             {
-                EditorGUILayout.HelpBox("Add target entries for this state, then choose which properties each target controls.", MessageType.Info);
+                EditorGUILayout.HelpBox("This controller has no targets. Add targets in the Controller Targets section.", MessageType.Info);
+                return;
             }
 
-            for (int i = 0; i < targetStateList.Count; i++)
+            for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
             {
-                if (i > 0)
+                UIControllerTargetData targetData = targetList[targetIndex];
+                UIControllerTargetStateData targetStateData = stateData.TargetStateList[targetIndex];
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(GetTargetDisplayName(targetData, targetIndex), EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+                using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.Space(TargetBlockSpacing);
+                    EditorGUILayout.ObjectField(targetData.RectTransform, typeof(RectTransform), true, GUILayout.Width(220f));
                 }
+                EditorGUILayout.EndHorizontal();
 
-                UIControllerTargetStateData targetStateData = targetStateList[i];
-                BeginTintedHelpBox(i, true);
-                if (DrawTargetState(stateData.Index, targetStateData, targetStateList, i))
-                {
-                    EditorGUILayout.EndVertical();
-                    return;
-                }
-
+                DrawStatePropertyList(stateIndex, targetIndex, targetData, targetStateData);
                 EditorGUILayout.EndVertical();
             }
-
-            string firstAvailableTargetName = GetFirstAvailableTargetName(targetStateList, -1);
-            bool canAddTarget = string.IsNullOrEmpty(firstAvailableTargetName) == false;
-            GUIStyle addTargetButtonStyle = canAddTarget ? _outlineButtonStyle : _outlineButtonDisabledStyle;
-            if (GUILayout.Button("+ Add Target", addTargetButtonStyle, GUILayout.ExpandWidth(true), GUILayout.Height(32f)) && canAddTarget)
-            {
-                ApplyMutation("Add UIController Target", () =>
-                {
-                    UIControllerTargetStateData targetStateData = new UIControllerTargetStateData();
-                    targetStateData.Name = firstAvailableTargetName;
-                    targetStateList.Add(targetStateData);
-                });
-            }
         }
 
-        private void DrawStateComment(UIControllerStateData stateData, string stateKey)
+        private void DrawStatePropertyList(int stateIndex, int targetIndex, UIControllerTargetData targetData, UIControllerTargetStateData targetStateData)
         {
-            bool editing = IsStateCommentEditing(stateKey);
-            if (editing)
+            List<string> propertyNameList = targetData.PropertyNameList;
+            if (propertyNameList.Count == 0)
             {
-                GUILayout.Space(12f);
-                GUILayout.Label("Comment:", _mutedLabelStyle, GUILayout.Width(62f));
-                string commentBuffer = GetStateCommentBuffer(stateKey, stateData.Comment);
-                string newCommentBuffer = EditorGUILayout.TextField(commentBuffer, GUILayout.MinWidth(160f));
-                if (newCommentBuffer != commentBuffer)
-                {
-                    _stateCommentBufferDict[stateKey] = newCommentBuffer;
-                }
-
-                if (GUILayout.Button("OK", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth), GUILayout.Height(22f)))
-                {
-                    string finalComment = GetStateCommentBuffer(stateKey, stateData.Comment);
-                    if (finalComment != (stateData.Comment ?? string.Empty))
-                    {
-                        ApplyMutation("Edit UIController State Comment", () => stateData.Comment = finalComment);
-                    }
-
-                    _stateCommentEditingDict[stateKey] = false;
-                    GUI.FocusControl(null);
-                    Repaint();
-                }
-
+                EditorGUILayout.LabelField("No properties configured for this target.", EditorStyles.miniLabel);
                 return;
             }
 
-            GUILayout.Space(12f);
-            string comment = stateData.Comment ?? string.Empty;
-            GUIContent commentContent = new GUIContent($"Comment: {comment}");
-            float commentWidth = _mutedLabelStyle.CalcSize(commentContent).x + 6f;
-            GUILayout.Label(commentContent, _mutedLabelStyle, GUILayout.Width(commentWidth));
-            GUILayout.Space(6f);
-            if (GUILayout.Button("Edit", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(22f)))
+            for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
             {
-                _stateCommentEditingDict[stateKey] = true;
-                _stateCommentBufferDict[stateKey] = comment;
-            }
-
-            return;
-#if false
-
-            bool isEditing = IsStateCommentEditing(stateKey);
-            if (isEditing)
-            {
-                GUILayout.Space(4f);
-                GUILayout.Label("注释:", EditorStyles.miniLabel, GUILayout.Width(32f));
-                EditorGUI.BeginChangeCheck();
-                string newComment = EditorGUILayout.DelayedTextField(stateData.Comment ?? string.Empty, GUILayout.MinWidth(160f));
-                if (EditorGUI.EndChangeCheck())
-                {
-                    ApplyMutation("Edit UIController State Comment", () => stateData.Comment = newComment);
-                }
-
-                if (GUILayout.Button("OK", EditorStyles.miniButton, GUILayout.Width(CommentButtonWidth)))
-                {
-                    _stateCommentEditingDict[stateKey] = false;
-                }
-
-                return;
-            }
-
-            string comment = string.IsNullOrWhiteSpace(stateData.Comment) ? "-" : stateData.Comment;
-            GUILayout.Space(4f);
-            GUILayout.Label($"注释: {comment}", EditorStyles.miniLabel);
-            if (GUILayout.Button("Edit", EditorStyles.miniButton, GUILayout.Width(CommentButtonWidth)))
-            {
-                _stateCommentEditingDict[stateKey] = true;
-            }
-        #endif
-        }
-
-        private void DrawTargetStateListValidation(List<UIControllerTargetStateData> targetStateList)
-        {
-            HashSet<string> existingTargetNameSet = new HashSet<string>();
-            List<string> duplicateTargetNameList = new List<string>();
-            int emptyTargetCount = 0;
-
-            for (int i = 0; i < targetStateList.Count; i++)
-            {
-                string targetName = targetStateList[i]?.Name;
-                if (string.IsNullOrWhiteSpace(targetName))
-                {
-                    emptyTargetCount++;
-                    continue;
-                }
-
-                if (existingTargetNameSet.Add(targetName))
-                {
-                    continue;
-                }
-
-                if (duplicateTargetNameList.Contains(targetName) == false)
-                {
-                    duplicateTargetNameList.Add(targetName);
-                }
-            }
-
-            if (duplicateTargetNameList.Count > 0)
-            {
-                EditorGUILayout.HelpBox($"Duplicate target in this state: {string.Join(", ", duplicateTargetNameList)}", MessageType.Error);
-            }
-
-            if (emptyTargetCount > 0)
-            {
-                EditorGUILayout.HelpBox($"This state contains {emptyTargetCount} empty target entry.", MessageType.Warning);
-            }
-        }
-
-        private bool DrawTargetState(int stateIndex, UIControllerTargetStateData targetStateData, List<UIControllerTargetStateData> targetStateList, int targetIndex)
-        {
-            if (DrawTargetNamePopup(targetStateData, targetStateList, targetIndex))
-            {
-                return true;
-            }
-
-            RectTransform rectTransform = FindTargetRectTransform(targetStateData.Name);
-            DrawReadOnlyObjectRow("RectTransform", rectTransform, typeof(RectTransform));
-
-            EditorGUILayout.Space(4f);
-
-            DrawPropertyList(stateIndex, targetIndex, targetStateData, rectTransform);
-
-            if (string.IsNullOrWhiteSpace(targetStateData.Name) && targetStateData.PropertyList.Count > 0)
-            {
-                EditorGUILayout.HelpBox("Select a Target before previewing or capturing controlled properties.", MessageType.Error);
-            }
-            else if (rectTransform == null && targetStateData.PropertyList.Count > 0)
-            {
-                EditorGUILayout.HelpBox($"{targetStateData.Name} has no RectTransform binding.", MessageType.Error);
-            }
-
-            return false;
-        }
-
-        private void DrawPropertyList(int stateIndex, int targetIndex, UIControllerTargetStateData targetStateData, RectTransform rectTransform)
-        {
-            List<UIControllerProperty> propertyList = targetStateData.PropertyList;
-            for (int i = 0; i < propertyList.Count; i++)
-            {
-                UIControllerProperty property = propertyList[i];
+                string propertyName = propertyNameList[propertyIndex];
+                UIControllerProperty property = targetStateData.PropertyList[propertyIndex];
                 if (property == null)
                 {
+                    EditorGUILayout.HelpBox($"{propertyName}: property data is missing and could not be created.", MessageType.Error);
                     continue;
                 }
 
-                if (DrawPropertyRow(stateIndex, targetIndex, targetStateData, propertyList, i, rectTransform))
-                {
-                    return;
-                }
+                DrawPropertyRow(stateIndex, targetIndex, propertyIndex, propertyName, property, targetData.RectTransform);
             }
-
-            DrawAddPropertyButton(targetStateData, propertyList, rectTransform);
         }
 
-        private bool DrawPropertyRow(int stateIndex, int targetIndex, UIControllerTargetStateData targetStateData, List<UIControllerProperty> propertyList, int propertyIndex, RectTransform rectTransform)
+        private void DrawPropertyRow(int stateIndex, int targetIndex, int propertyIndex, string propertyName, UIControllerProperty property, RectTransform rectTransform)
         {
-            UIControllerProperty property = propertyList[propertyIndex];
-            string propertyValueKey = GetPropertyValueKey(stateIndex, targetIndex, property);
+            string propertyValueKey = GetPropertyValueKey(stateIndex, targetIndex, propertyIndex, propertyName);
             string errorMessage = null;
             bool isSupported = rectTransform != null && property.IsValid(rectTransform, out errorMessage);
 
             EditorGUILayout.BeginHorizontal();
-            DrawPropertyNamePopup(targetStateData, propertyList, propertyIndex, rectTransform, propertyValueKey);
-            GUILayout.Space(8f);
+            GUILayout.Label(propertyName, GUILayout.Width(PropertyPopupWidth));
             if (property.CanAnimate)
             {
                 bool newAnimate = EditorGUILayout.ToggleLeft("Animation", property.NeedAnimate, GUILayout.Width(AnimationToggleWidth));
@@ -558,92 +551,40 @@ namespace Windsmoon.UIController.Editor
                     }
                 }
             }
+            else
+            {
+                GUILayout.Space(AnimationToggleWidth);
+            }
 
             DrawPropertyValue(property, propertyValueKey);
             using (new EditorGUI.DisabledScope(isSupported == false))
             {
-                if (GUILayout.Button("Capture", _secondaryButtonStyle, GUILayout.Width(CaptureButtonWidth + 10f), GUILayout.Height(24f)))
+                if (GUILayout.Button("Capture", GUILayout.Width(CaptureButtonWidth)))
                 {
-                    ApplyMutation($"Capture UIController {property.Name}", () => property.Capture(rectTransform));
+                    ApplyMutation($"Capture UIController {propertyName}", () => property.Capture(rectTransform));
                 }
             }
 
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("X", _iconButtonStyle, GUILayout.Width(DeleteButtonWidth), GUILayout.Height(24f)))
-            {
-                ApplyMutation("Delete UIController Property", () =>
-                {
-                    propertyList.RemoveAt(propertyIndex);
-                    targetStateData.RebuildCache();
-                });
-                ClearPropertyValueEditState(propertyValueKey);
-                ClearPropertyAnimationEditState(propertyValueKey);
-                EditorGUILayout.EndHorizontal();
-                return true;
-            }
-
             EditorGUILayout.EndHorizontal();
 
-            if (isSupported == false && string.IsNullOrEmpty(errorMessage) == false)
+            if (property.Name != propertyName)
             {
-                EditorGUILayout.HelpBox($"{property.Name}: {errorMessage}", MessageType.Error);
+                EditorGUILayout.HelpBox($"Property data type mismatch. Expected {propertyName}, got {property.Name}.", MessageType.Error);
+            }
+            else if (isSupported == false)
+            {
+                string message = rectTransform == null ? "Target has no RectTransform." : errorMessage;
+                if (string.IsNullOrEmpty(message) == false)
+                {
+                    EditorGUILayout.HelpBox($"{propertyName}: {message}", MessageType.Error);
+                }
             }
 
             if (property.CanAnimate && property.NeedAnimate)
             {
                 DrawPropertyAnimationOptions(property, propertyValueKey);
             }
-
-            return false;
-        }
-
-        private void DrawPropertyAnimationOptions(UIControllerProperty property, string propertyValueKey)
-        {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(24f);
-
-            if (IsPropertyAnimationEditing(propertyValueKey))
-            {
-                PropertyAnimationBuffer buffer = GetPropertyAnimationBuffer(property, propertyValueKey);
-                GUILayout.Label("Animation Type", _inlineValueLabelStyle, GUILayout.Width(96f));
-                buffer.AnimationEase = (Ease)EditorGUILayout.EnumPopup(buffer.AnimationEase, GUILayout.Width(150f));
-                GUILayout.Space(8f);
-                GUILayout.Label("Duration", _inlineValueLabelStyle, GUILayout.Width(58f));
-                buffer.AnimationDuration = EditorGUILayout.FloatField(buffer.AnimationDuration, GUILayout.Width(64f));
-                GUILayout.Label("s", _inlineValueLabelStyle, GUILayout.Width(12f));
-                _propertyAnimationBufferDict[propertyValueKey] = buffer;
-
-                if (GUILayout.Button("OK", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(22f)))
-                {
-                    PropertyAnimationBuffer finalBuffer = buffer;
-                    ApplyMutation("Edit UIController Property Animation", () =>
-                    {
-                        property.AnimationEase = finalBuffer.AnimationEase;
-                        property.AnimationDuration = finalBuffer.AnimationDuration;
-                    });
-                    ClearPropertyAnimationEditState(propertyValueKey);
-                    GUI.FocusControl(null);
-                    Repaint();
-                }
-
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                return;
-            }
-
-            GUILayout.Label($"Animation  {property.AnimationEase}  {property.AnimationDuration:0.###}s", _inlineValueLabelStyle);
-            if (GUILayout.Button("Edit", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(22f)))
-            {
-                _propertyAnimationEditingDict[propertyValueKey] = true;
-                _propertyAnimationBufferDict[propertyValueKey] = new PropertyAnimationBuffer
-                {
-                    AnimationEase = property.AnimationEase,
-                    AnimationDuration = property.AnimationDuration
-                };
-            }
-
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawPropertyValue(UIControllerProperty property, string propertyValueKey)
@@ -651,7 +592,7 @@ namespace Windsmoon.UIController.Editor
             if (IsPropertyValueEditing(propertyValueKey))
             {
                 DrawPropertyValueEditor(property, propertyValueKey);
-                if (GUILayout.Button("OK", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(24f)))
+                if (GUILayout.Button("OK", GUILayout.Width(44f)))
                 {
                     object value = GetPropertyValueBuffer(property, propertyValueKey);
                     ApplyMutation("Edit UIController Property Value", () => SetPropertyTargetValue(property, value));
@@ -666,7 +607,7 @@ namespace Windsmoon.UIController.Editor
             DrawPropertyReadonlyValue(property);
             using (new EditorGUI.DisabledScope(CanEditPropertyValue(property) == false))
             {
-                if (GUILayout.Button("Edit", _secondaryButtonStyle, GUILayout.Width(CommentButtonWidth + 8f), GUILayout.Height(24f)))
+                if (GUILayout.Button("Edit", GUILayout.Width(44f)))
                 {
                     _propertyValueEditingDict[propertyValueKey] = true;
                     _propertyValueBufferDict[propertyValueKey] = GetPropertyTargetValue(property);
@@ -678,7 +619,7 @@ namespace Windsmoon.UIController.Editor
         {
             if (property is UIControllerProperty<Color> colorProperty)
             {
-                GUILayout.Label("Value", _inlineValueLabelStyle, GUILayout.Width(42f));
+                GUILayout.Label("Value", GUILayout.Width(42f));
                 using (new EditorGUI.DisabledScope(true))
                 {
                     EditorGUILayout.ColorField(GUIContent.none, colorProperty.GetTargetValue(), false, true, false, GUILayout.Width(72f), GUILayout.Height(18f));
@@ -686,7 +627,7 @@ namespace Windsmoon.UIController.Editor
                 return;
             }
 
-            GUILayout.Label($"Value  {property.GetValueText()}", _inlineValueLabelStyle);
+            GUILayout.Label($"Value  {property.GetValueText()}", GUILayout.MinWidth(120f));
         }
 
         private void DrawPropertyValueEditor(UIControllerProperty property, string propertyValueKey)
@@ -717,7 +658,7 @@ namespace Windsmoon.UIController.Editor
             {
                 float floatValue = value is float floatBuffer ? floatBuffer : 0f;
                 float newValue = EditorGUILayout.FloatField("Value", floatValue, GUILayout.MinWidth(120f));
-                if (newValue != floatValue)
+                if (!Mathf.Approximately(newValue, floatValue))
                 {
                     _propertyValueBufferDict[propertyValueKey] = newValue;
                 }
@@ -757,6 +698,53 @@ namespace Windsmoon.UIController.Editor
             EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
+        private void DrawPropertyAnimationOptions(UIControllerProperty property, string propertyValueKey)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(PropertyPopupWidth + AnimationToggleWidth + 8f);
+
+            if (IsPropertyAnimationEditing(propertyValueKey))
+            {
+                PropertyAnimationBuffer buffer = GetPropertyAnimationBuffer(property, propertyValueKey);
+                GUILayout.Label("Ease", GUILayout.Width(34f));
+                buffer.AnimationEase = (Ease)EditorGUILayout.EnumPopup(buffer.AnimationEase, GUILayout.Width(150f));
+                GUILayout.Label("Duration", GUILayout.Width(58f));
+                buffer.AnimationDuration = EditorGUILayout.FloatField(buffer.AnimationDuration, GUILayout.Width(64f));
+                GUILayout.Label("s", GUILayout.Width(12f));
+                _propertyAnimationBufferDict[propertyValueKey] = buffer;
+
+                if (GUILayout.Button("OK", GUILayout.Width(44f)))
+                {
+                    PropertyAnimationBuffer finalBuffer = buffer;
+                    ApplyMutation("Edit UIController Property Animation", () =>
+                    {
+                        property.AnimationEase = finalBuffer.AnimationEase;
+                        property.AnimationDuration = finalBuffer.AnimationDuration;
+                    });
+                    ClearPropertyAnimationEditState(propertyValueKey);
+                    GUI.FocusControl(null);
+                    Repaint();
+                }
+            }
+            else
+            {
+                GUILayout.Label($"Ease  {property.AnimationEase}", GUILayout.Width(160f));
+                GUILayout.Label($"Duration  {property.AnimationDuration:0.###}s", GUILayout.Width(130f));
+                if (GUILayout.Button("Edit", GUILayout.Width(44f)))
+                {
+                    _propertyAnimationEditingDict[propertyValueKey] = true;
+                    _propertyAnimationBufferDict[propertyValueKey] = new PropertyAnimationBuffer
+                    {
+                        AnimationEase = property.AnimationEase,
+                        AnimationDuration = property.AnimationDuration
+                    };
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+
         private bool IsPropertyValueEditing(string propertyValueKey)
         {
             if (_propertyValueEditingDict.TryGetValue(propertyValueKey, out bool isEditing))
@@ -791,6 +779,14 @@ namespace Windsmoon.UIController.Editor
             _propertyAnimationBufferDict.Remove(propertyValueKey);
         }
 
+        private void ClearAllPropertyEditStates()
+        {
+            _propertyValueEditingDict.Clear();
+            _propertyValueBufferDict.Clear();
+            _propertyAnimationEditingDict.Clear();
+            _propertyAnimationBufferDict.Clear();
+        }
+
         private PropertyAnimationBuffer GetPropertyAnimationBuffer(UIControllerProperty property, string propertyValueKey)
         {
             if (_propertyAnimationBufferDict.TryGetValue(propertyValueKey, out PropertyAnimationBuffer buffer))
@@ -807,9 +803,9 @@ namespace Windsmoon.UIController.Editor
             return buffer;
         }
 
-        private string GetPropertyValueKey(int stateIndex, int targetIndex, UIControllerProperty property)
+        private string GetPropertyValueKey(int stateIndex, int targetIndex, int propertyIndex, string propertyName)
         {
-            return $"{_currentControllerIndex}:{stateIndex}:{targetIndex}:{property.Name}";
+            return $"{_currentControllerIndex}:{stateIndex}:{targetIndex}:{propertyIndex}:{propertyName}";
         }
 
         private bool CanEditPropertyValue(UIControllerProperty property)
@@ -897,82 +893,253 @@ namespace Windsmoon.UIController.Editor
             }
         }
 
-        private void DrawPropertyNamePopup(UIControllerTargetStateData targetStateData, List<UIControllerProperty> propertyList, int propertyIndex, RectTransform rectTransform, string propertyValueKey)
+        private void AddControllerTarget(UIControllerData controllerData)
         {
-            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyList, propertyIndex);
-            if (availableDefinitionList.Count == 0)
-            {
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.Popup(0, new[] { "<No Available Properties>" }, _toolbarPopupStyle, GUILayout.Width(PropertyPopupWidth), GUILayout.Height(24f));
-                    DrawPopupArrow();
-                }
+            controllerData.TargetList.Add(new UIControllerTargetData());
+            SyncControllerStructure(controllerData);
+        }
 
+        private void DeleteControllerTarget(UIControllerData controllerData, int targetIndex)
+        {
+            controllerData.TargetList.RemoveAt(targetIndex);
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                List<UIControllerTargetStateData> targetStateList = stateList[stateIndex].TargetStateList;
+                if (targetIndex < targetStateList.Count)
+                {
+                    targetStateList.RemoveAt(targetIndex);
+                }
+            }
+
+            SyncControllerStructure(controllerData);
+        }
+
+        private void AddControllerProperty(UIControllerData controllerData, int targetIndex, string propertyName)
+        {
+            UIControllerTargetData targetData = controllerData.TargetList[targetIndex];
+            targetData.PropertyNameList.Add(propertyName);
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerTargetStateData targetStateData = EnsureTargetState(stateList[stateIndex], targetIndex);
+                targetStateData.PropertyList.Add(CreateProperty(propertyName, targetData.RectTransform));
+            }
+
+            SyncControllerStructure(controllerData);
+        }
+
+        private void ChangeControllerProperty(UIControllerData controllerData, int targetIndex, int propertyIndex, string propertyName)
+        {
+            UIControllerTargetData targetData = controllerData.TargetList[targetIndex];
+            targetData.PropertyNameList[propertyIndex] = propertyName;
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerTargetStateData targetStateData = EnsureTargetState(stateList[stateIndex], targetIndex);
+                EnsurePropertyListSize(targetStateData.PropertyList, propertyIndex + 1);
+                targetStateData.PropertyList[propertyIndex] = CreateProperty(propertyName, targetData.RectTransform);
+            }
+
+            SyncControllerStructure(controllerData);
+        }
+
+        private void DeleteControllerProperty(UIControllerData controllerData, int targetIndex, int propertyIndex)
+        {
+            UIControllerTargetData targetData = controllerData.TargetList[targetIndex];
+            targetData.PropertyNameList.RemoveAt(propertyIndex);
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                List<UIControllerProperty> propertyList = EnsureTargetState(stateList[stateIndex], targetIndex).PropertyList;
+                if (propertyIndex < propertyList.Count)
+                {
+                    propertyList.RemoveAt(propertyIndex);
+                }
+            }
+
+            SyncControllerStructure(controllerData);
+        }
+
+        private void SyncAllControllerStructures()
+        {
+            if (_uiControllerPanel == null)
+            {
                 return;
             }
 
-            string[] options = GetPropertyOptions(availableDefinitionList);
-            UIControllerProperty property = propertyList[propertyIndex];
-            int popupIndex = GetPropertyDefinitionIndex(availableDefinitionList, property.Name);
-            if (popupIndex < 0)
+            List<UIControllerData> controllerList = _uiControllerPanel.ControllerList;
+            for (int controllerIndex = 0; controllerIndex < controllerList.Count; controllerIndex++)
             {
-                popupIndex = 0;
+                UIControllerData controllerData = controllerList[controllerIndex];
+                if (controllerData == null || IsLegacyShape(controllerData))
+                {
+                    continue;
+                }
+
+                SyncControllerStructure(controllerData);
+            }
+        }
+
+        private void SyncControllerStructure(UIControllerData controllerData)
+        {
+            if (controllerData == null || IsLegacyShape(controllerData))
+            {
+                return;
             }
 
-            using (new EditorGUI.DisabledScope(rectTransform == null))
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
             {
-                int newIndex = EditorGUILayout.Popup(popupIndex, options, _toolbarPopupStyle, GUILayout.Width(PropertyPopupWidth), GUILayout.Height(24f));
-                DrawPopupArrow();
-                if (newIndex != popupIndex)
+                if (targetList[targetIndex] == null)
                 {
-                    UIControllerPropertyDefinition definition = availableDefinitionList[newIndex];
-                    ApplyMutation("Change UIController Property", () =>
+                    targetList[targetIndex] = new UIControllerTargetData();
+                }
+            }
+
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                if (stateData == null)
+                {
+                    stateData = new UIControllerStateData();
+                    stateList[stateIndex] = stateData;
+                }
+
+                stateData.Index = stateIndex;
+                List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+                while (targetStateList.Count < targetList.Count)
+                {
+                    UIControllerTargetData targetData = targetList[targetStateList.Count];
+                    targetStateList.Add(CreateTargetStateData(targetData));
+                }
+
+                while (targetStateList.Count > targetList.Count)
+                {
+                    targetStateList.RemoveAt(targetStateList.Count - 1);
+                }
+
+                for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
+                {
+                    if (targetStateList[targetIndex] == null)
                     {
-                        UIControllerProperty newProperty = definition.Create();
-                        CaptureProperty(newProperty, rectTransform);
-                        propertyList[propertyIndex] = newProperty;
-                        targetStateData.RebuildCache();
-                    });
-                    ClearPropertyValueEditState(propertyValueKey);
-                    ClearPropertyAnimationEditState(propertyValueKey);
+                        targetStateList[targetIndex] = new UIControllerTargetStateData();
+                    }
+
+                    SyncTargetStatePropertyList(targetList[targetIndex], targetStateList[targetIndex]);
                 }
             }
         }
 
-        private void DrawAddPropertyButton(UIControllerTargetStateData targetStateData, List<UIControllerProperty> propertyList, RectTransform rectTransform)
+        private UIControllerTargetStateData EnsureTargetState(UIControllerStateData stateData, int targetIndex)
         {
-            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyList, -1);
-            bool canAddProperty = availableDefinitionList.Count > 0 && rectTransform != null;
-            GUIStyle addPropertyButtonStyle = canAddProperty ? _outlineButtonStyle : _outlineButtonDisabledStyle;
-            if (GUILayout.Button("+ Add Property", addPropertyButtonStyle, GUILayout.ExpandWidth(true), GUILayout.Height(32f)) && canAddProperty)
+            List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+            while (targetStateList.Count <= targetIndex)
             {
-                UIControllerPropertyDefinition definition = availableDefinitionList[0];
-                ApplyMutation("Add UIController Property", () =>
+                targetStateList.Add(new UIControllerTargetStateData());
+            }
+
+            if (targetStateList[targetIndex] == null)
+            {
+                targetStateList[targetIndex] = new UIControllerTargetStateData();
+            }
+
+            return targetStateList[targetIndex];
+        }
+
+        private UIControllerTargetStateData CreateTargetStateData(UIControllerTargetData targetData)
+        {
+            UIControllerTargetStateData targetStateData = new UIControllerTargetStateData();
+            List<string> propertyNameList = targetData.PropertyNameList;
+            for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
+            {
+                targetStateData.PropertyList.Add(CreateProperty(propertyNameList[propertyIndex], targetData.RectTransform));
+            }
+
+            return targetStateData;
+        }
+
+        private void SyncTargetStatePropertyList(UIControllerTargetData targetData, UIControllerTargetStateData targetStateData)
+        {
+            List<string> propertyNameList = targetData.PropertyNameList;
+            List<UIControllerProperty> propertyList = targetStateData.PropertyList;
+            Dictionary<string, UIControllerProperty> existingPropertyDict = new Dictionary<string, UIControllerProperty>();
+            for (int i = 0; i < propertyList.Count; i++)
+            {
+                UIControllerProperty property = propertyList[i];
+                if (property == null || string.IsNullOrWhiteSpace(property.Name) || existingPropertyDict.ContainsKey(property.Name))
                 {
-                    UIControllerProperty property = definition.Create();
-                    CaptureProperty(property, rectTransform);
-                    targetStateData.SetProperty(property);
-                });
+                    continue;
+                }
+
+                existingPropertyDict.Add(property.Name, property);
+            }
+
+            List<UIControllerProperty> newPropertyList = new List<UIControllerProperty>(propertyNameList.Count);
+            for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
+            {
+                string propertyName = propertyNameList[propertyIndex];
+                if (existingPropertyDict.TryGetValue(propertyName, out UIControllerProperty existingProperty))
+                {
+                    newPropertyList.Add(existingProperty);
+                }
+                else
+                {
+                    newPropertyList.Add(CreateProperty(propertyName, targetData.RectTransform));
+                }
+            }
+
+            propertyList.Clear();
+            propertyList.AddRange(newPropertyList);
+            targetStateData.RebuildCache();
+        }
+
+        private void EnsurePropertyListSize(List<UIControllerProperty> propertyList, int count)
+        {
+            while (propertyList.Count < count)
+            {
+                propertyList.Add(null);
             }
         }
 
-        private List<UIControllerPropertyDefinition> GetAvailablePropertyDefinitionList(List<UIControllerProperty> propertyList, int ignorePropertyIndex)
+        private UIControllerProperty CreateProperty(string propertyName, RectTransform rectTransform)
+        {
+            UIControllerProperty property = UIControllerPropertyFactory.Create(propertyName);
+            CaptureProperty(property, rectTransform);
+            return property;
+        }
+
+        private void CaptureProperty(UIControllerProperty property, RectTransform rectTransform)
+        {
+            if (property == null || rectTransform == null)
+            {
+                return;
+            }
+
+            if (property.IsValid(rectTransform, out _))
+            {
+                property.Capture(rectTransform);
+            }
+        }
+
+        private List<UIControllerPropertyDefinition> GetAvailablePropertyDefinitionList(List<string> propertyNameList, int ignorePropertyIndex)
         {
             HashSet<string> usedPropertyNameSet = new HashSet<string>();
-            for (int i = 0; i < propertyList.Count; i++)
+            for (int i = 0; i < propertyNameList.Count; i++)
             {
                 if (i == ignorePropertyIndex)
                 {
                     continue;
                 }
 
-                UIControllerProperty property = propertyList[i];
-                if (property == null || string.IsNullOrWhiteSpace(property.Name))
+                string propertyName = propertyNameList[i];
+                if (string.IsNullOrWhiteSpace(propertyName))
                 {
                     continue;
                 }
 
-                usedPropertyNameSet.Add(property.Name);
+                usedPropertyNameSet.Add(propertyName);
             }
 
             List<UIControllerPropertyDefinition> availableDefinitionList = new List<UIControllerPropertyDefinition>();
@@ -1014,196 +1181,6 @@ namespace Windsmoon.UIController.Editor
             return -1;
         }
 
-        private void CaptureProperty(UIControllerProperty property, RectTransform rectTransform)
-        {
-            if (rectTransform == null || property == null)
-            {
-                return;
-            }
-
-            if (property.IsValid(rectTransform, out _))
-            {
-                property.Capture(rectTransform);
-            }
-        }
-
-        private bool DrawTargetNamePopup(UIControllerTargetStateData targetStateData, List<UIControllerTargetStateData> targetStateList, int targetIndex)
-        {
-            if (_controllerTargetNameList.Count > 0 &&
-                string.IsNullOrEmpty(targetStateData.Name) == false &&
-                _controllerTargetNameList.Contains(targetStateData.Name) == false)
-            {
-                EditorGUILayout.HelpBox($"Target {targetStateData.Name} not found in controller targets.", MessageType.Error);
-            }
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Target", _rowLabelStyle, GUILayout.Width(RowLabelWidth), GUILayout.Height(24f));
-
-            List<string> availableTargetNameList = GetAvailableTargetNameList(targetStateList, targetIndex);
-            if (availableTargetNameList.Count == 0)
-            {
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.Popup(0, new[] { "<No Available Targets>" }, _toolbarPopupStyle, GUILayout.Height(24f));
-                    DrawPopupArrow();
-                }
-            }
-            else
-            {
-                string[] options = new string[availableTargetNameList.Count];
-                for (int i = 0; i < availableTargetNameList.Count; i++)
-                {
-                    options[i] = availableTargetNameList[i];
-                }
-
-                int popupIndex = availableTargetNameList.IndexOf(targetStateData.Name);
-                if (popupIndex < 0)
-                {
-                    popupIndex = 0;
-                }
-
-                int newIndex = EditorGUILayout.Popup(popupIndex, options, _toolbarPopupStyle, GUILayout.Height(24f));
-                DrawPopupArrow();
-                if (newIndex != popupIndex)
-                {
-                    string targetName = availableTargetNameList[newIndex];
-                    ApplyMutation("Change UIController Target", () => targetStateData.Name = targetName);
-                }
-            }
-
-            if (GUILayout.Button("X", _iconButtonStyle, GUILayout.Width(DeleteButtonWidth), GUILayout.Height(24f)))
-            {
-                ApplyMutation("Delete UIController Target", () => targetStateList.RemoveAt(targetIndex));
-                EditorGUILayout.EndHorizontal();
-                return true;
-            }
-
-            EditorGUILayout.EndHorizontal();
-            return false;
-        }
-
-        private string[] GetControllerOptions(List<UIControllerData> controllerList)
-        {
-            string[] options = new string[controllerList.Count];
-            for (int i = 0; i < controllerList.Count; i++)
-            {
-                options[i] = GetControllerDisplayName(controllerList[i].Name, i);
-            }
-
-            return options;
-        }
-
-        private void BeginTintedHelpBox(int index, bool isTargetBlock)
-        {
-            GUIStyle style = isTargetBlock ? _targetCardStyle : _stateCardStyle;
-            Rect rect = EditorGUILayout.BeginVertical(style);
-            if (UnityEngine.Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
-            Color fillColor = GetTintedHelpBoxColor(index, isTargetBlock);
-            Color borderColor = GetCardBorderColor(isTargetBlock);
-            Rect fillRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
-            EditorGUI.DrawRect(fillRect, fillColor);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1f), borderColor);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), borderColor);
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 1f, rect.height), borderColor);
-            EditorGUI.DrawRect(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), borderColor);
-        }
-
-        private Color GetTintedHelpBoxColor(int index, bool isTargetBlock)
-        {
-            bool isEven = index % 2 == 0;
-            if (EditorGUIUtility.isProSkin)
-            {
-                if (isTargetBlock == false)
-                {
-                    return isEven
-                        ? new Color(0.18f, 0.20f, 0.24f, 0.98f)
-                        : new Color(0.17f, 0.19f, 0.23f, 0.98f);
-                }
-
-                return isEven
-                    ? new Color(0.20f, 0.22f, 0.26f, 0.98f)
-                    : new Color(0.19f, 0.21f, 0.25f, 0.98f);
-            }
-
-            if (isTargetBlock == false)
-            {
-                return isEven
-                    ? new Color(0.92f, 0.94f, 0.97f, 1f)
-                    : new Color(0.90f, 0.92f, 0.96f, 1f);
-            }
-
-            return isEven
-                ? new Color(0.95f, 0.96f, 0.98f, 1f)
-                : new Color(0.92f, 0.94f, 0.97f, 1f);
-        }
-
-        private List<string> GetAvailableTargetNameList(List<UIControllerTargetStateData> targetStateList, int ignoreTargetIndex)
-        {
-            HashSet<string> usedTargetNameSet = new HashSet<string>();
-            for (int i = 0; i < targetStateList.Count; i++)
-            {
-                if (i == ignoreTargetIndex)
-                {
-                    continue;
-                }
-
-                string targetName = targetStateList[i]?.Name;
-                if (string.IsNullOrWhiteSpace(targetName))
-                {
-                    continue;
-                }
-
-                usedTargetNameSet.Add(targetName);
-            }
-
-            List<string> availableTargetNameList = new List<string>();
-            for (int i = 0; i < _controllerTargetNameList.Count; i++)
-            {
-                string targetName = _controllerTargetNameList[i];
-                if (usedTargetNameSet.Contains(targetName))
-                {
-                    continue;
-                }
-
-                availableTargetNameList.Add(targetName);
-            }
-
-            return availableTargetNameList;
-        }
-
-        private string GetFirstAvailableTargetName(List<UIControllerTargetStateData> targetStateList, int ignoreTargetIndex)
-        {
-            List<string> availableTargetNameList = GetAvailableTargetNameList(targetStateList, ignoreTargetIndex);
-            if (availableTargetNameList.Count == 0)
-            {
-                return null;
-            }
-
-            return availableTargetNameList[0];
-        }
-
-        private void RefreshControllerTargetNames()
-        {
-            _controllerTargetNameList.Clear();
-            List<UIControllerTargetBinding> bindingList = _uiControllerPanel.ControllerTargetBindingList;
-            HashSet<string> existingNameSet = new HashSet<string>();
-
-            for (int i = 0; i < bindingList.Count; i++)
-            {
-                string targetName = bindingList[i].Name;
-                if (string.IsNullOrWhiteSpace(targetName) || existingNameSet.Add(targetName) == false)
-                {
-                    continue;
-                }
-
-                _controllerTargetNameList.Add(targetName);
-            }
-        }
-
         private void RefreshPanelCaches()
         {
             if (_uiControllerPanel == null)
@@ -1211,26 +1188,8 @@ namespace Windsmoon.UIController.Editor
                 return;
             }
 
-            SyncControllerStateIndexes();
+            SyncAllControllerStructures();
             _uiControllerPanel.OnAfterDeserialize();
-        }
-
-        private void SyncControllerStateIndexes()
-        {
-            if (_uiControllerPanel == null)
-            {
-                return;
-            }
-
-            List<UIControllerData> controllerList = _uiControllerPanel.ControllerList;
-            for (int i = 0; i < controllerList.Count; i++)
-            {
-                List<UIControllerStateData> stateList = controllerList[i].StateList;
-                for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
-                {
-                    stateList[stateIndex].Index = stateIndex;
-                }
-            }
         }
 
         private void ApplyMutation(string undoName, Action mutation)
@@ -1247,33 +1206,29 @@ namespace Windsmoon.UIController.Editor
             Repaint();
         }
 
-        private RectTransform FindTargetRectTransform(string targetName)
+        private void RunManualMigration()
         {
-            if (string.IsNullOrWhiteSpace(targetName))
+            ApplyMutation("Migrate UIController Legacy Data", () =>
             {
-                return null;
-            }
+                _lastMigrationWarningList.Clear();
+                _lastMigrationWarningList.AddRange(_uiControllerPanel.MigrateLegacyDataToControllerTargets());
+                ClearAllPropertyEditStates();
+            });
 
-            List<UIControllerTargetBinding> bindingList = _uiControllerPanel.ControllerTargetBindingList;
-            for (int i = 0; i < bindingList.Count; i++)
+            for (int i = 0; i < _lastMigrationWarningList.Count; i++)
             {
-                if (bindingList[i].Name == targetName)
-                {
-                    return bindingList[i].RectTransform;
-                }
+                Debug.LogWarning(_lastMigrationWarningList[i], _uiControllerPanel);
             }
-
-            return null;
         }
 
-        private void ShowState(UIControllerData controllerData, UIControllerStateData stateData)
+        private void ShowState(UIControllerData controllerData, int stateIndex)
         {
             if (string.IsNullOrWhiteSpace(controllerData.Name))
             {
                 return;
             }
 
-            bool hasAnimatedProperty = HasAnimatedProperty(stateData);
+            bool hasAnimatedProperty = HasAnimatedProperty(controllerData, controllerData.StateList[stateIndex]);
             if (Application.isPlaying == false)
             {
                 DOTweenEditorPreview.Stop(false, true);
@@ -1282,19 +1237,20 @@ namespace Windsmoon.UIController.Editor
 
             _pendingAnimatedShowDirty = hasAnimatedProperty;
             RefreshPanelCaches();
-            _uiControllerPanel.SetControllerState(controllerData.Name, stateData.Index);
+            _uiControllerPanel.SetControllerState(controllerData.Name, stateIndex);
             if (hasAnimatedProperty == false)
             {
                 MarkPreviewTargetsDirty();
             }
         }
 
-        private bool HasAnimatedProperty(UIControllerStateData stateData)
+        private bool HasAnimatedProperty(UIControllerData controllerData, UIControllerStateData stateData)
         {
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
             List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
-            for (int i = 0; i < targetStateList.Count; i++)
+            for (int targetIndex = 0; targetIndex < targetList.Count && targetIndex < targetStateList.Count; targetIndex++)
             {
-                List<UIControllerProperty> propertyList = targetStateList[i].PropertyList;
+                List<UIControllerProperty> propertyList = targetStateList[targetIndex].PropertyList;
                 for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
                 {
                     UIControllerProperty property = propertyList[propertyIndex];
@@ -1318,19 +1274,34 @@ namespace Windsmoon.UIController.Editor
             EditorUtility.SetDirty(_uiControllerPanel);
             PrefabUtility.RecordPrefabInstancePropertyModifications(_uiControllerPanel);
 
-            List<UIControllerTargetBinding> bindingList = _uiControllerPanel.ControllerTargetBindingList;
-            for (int i = 0; i < bindingList.Count; i++)
+            HashSet<RectTransform> dirtyTargetSet = new HashSet<RectTransform>();
+            List<UIControllerData> controllerList = _uiControllerPanel.ControllerList;
+            for (int controllerIndex = 0; controllerIndex < controllerList.Count; controllerIndex++)
             {
-                RectTransform rectTransform = bindingList[i].RectTransform;
-                if (rectTransform == null)
+                List<UIControllerTargetData> targetList = controllerList[controllerIndex].TargetList;
+                for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
                 {
-                    continue;
-                }
+                    RectTransform rectTransform = targetList[targetIndex]?.RectTransform;
+                    if (rectTransform == null || dirtyTargetSet.Add(rectTransform) == false)
+                    {
+                        continue;
+                    }
 
-                EditorUtility.SetDirty(rectTransform.gameObject);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(rectTransform.gameObject);
-                EditorUtility.SetDirty(rectTransform);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(rectTransform);
+                    EditorUtility.SetDirty(rectTransform.gameObject);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(rectTransform.gameObject);
+                    Component[] components = rectTransform.GetComponents<Component>();
+                    for (int componentIndex = 0; componentIndex < components.Length; componentIndex++)
+                    {
+                        Component component = components[componentIndex];
+                        if (component == null)
+                        {
+                            continue;
+                        }
+
+                        EditorUtility.SetDirty(component);
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+                    }
+                }
             }
 
             if (_uiControllerPanel.gameObject.scene.IsValid())
@@ -1365,6 +1336,25 @@ namespace Windsmoon.UIController.Editor
             MarkPreviewTargetsDirty();
         }
 
+        private bool IsLegacyShape(UIControllerData controllerData)
+        {
+            if (controllerData == null || controllerData.TargetList.Count > 0)
+            {
+                return false;
+            }
+
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                if (stateList[stateIndex] != null && stateList[stateIndex].TargetStateList.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void ValidateCurrentControllerIndex(List<UIControllerData> controllerList)
         {
             if (_currentControllerIndex < 0 || _currentControllerIndex >= controllerList.Count)
@@ -1373,21 +1363,44 @@ namespace Windsmoon.UIController.Editor
             }
         }
 
+        private string[] GetControllerOptions(List<UIControllerData> controllerList)
+        {
+            string[] options = new string[controllerList.Count];
+            for (int i = 0; i < controllerList.Count; i++)
+            {
+                options[i] = GetControllerDisplayName(controllerList[i].Name, i);
+            }
+
+            return options;
+        }
+
+        private void DrawSectionHeader(string title, string summary)
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(summary, EditorStyles.miniLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
         private string GetControllerDisplayName(string controllerName, int index)
         {
             return string.IsNullOrWhiteSpace(controllerName) ? $"Controller {index + 1}" : controllerName;
         }
 
-        private string BuildStateSummary(UIControllerStateData stateData)
+        private string GetTargetDisplayName(UIControllerTargetData targetData, int index)
         {
-            int targetCount = stateData.TargetStateList.Count;
-            int controlledPropertyCount = 0;
-            for (int i = 0; i < stateData.TargetStateList.Count; i++)
+            if (targetData == null)
             {
-                controlledPropertyCount += stateData.TargetStateList[i].PropertyDict.Count;
+                return $"Target {index + 1}";
             }
 
-            return $"{targetCount} entries  |  {controlledPropertyCount} controls";
+            if (string.IsNullOrWhiteSpace(targetData.Name) == false)
+            {
+                return targetData.Name;
+            }
+
+            return targetData.RectTransform == null ? $"Target {index + 1}" : targetData.RectTransform.name;
         }
 
         private string GetStateKey(int stateIndex)
@@ -1406,307 +1419,16 @@ namespace Windsmoon.UIController.Editor
             return true;
         }
 
-        private bool IsStateCommentEditing(string stateKey)
+        private string BuildStateSummary(UIControllerData controllerData, UIControllerStateData stateData)
         {
-            if (_stateCommentEditingDict.TryGetValue(stateKey, out bool isEditing))
+            int propertyCount = 0;
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
             {
-                return isEditing;
+                propertyCount += targetList[targetIndex]?.PropertyNameList.Count ?? 0;
             }
 
-            _stateCommentEditingDict[stateKey] = false;
-            return false;
-        }
-
-        private string GetStateCommentBuffer(string stateKey, string currentComment)
-        {
-            if (_stateCommentBufferDict.TryGetValue(stateKey, out string commentBuffer))
-            {
-                return commentBuffer;
-            }
-
-            commentBuffer = currentComment ?? string.Empty;
-            _stateCommentBufferDict[stateKey] = commentBuffer;
-            return commentBuffer;
-        }
-
-        private void EnsureStyles()
-        {
-            if (_toolbarCardStyle != null)
-            {
-                return;
-            }
-
-            Color toolbarFillColor = EditorGUIUtility.isProSkin ? new Color(0.17f, 0.19f, 0.22f, 1f) : new Color(0.92f, 0.94f, 0.97f, 1f);
-            Color headerFillColor = EditorGUIUtility.isProSkin ? new Color(0.18f, 0.21f, 0.25f, 1f) : new Color(0.94f, 0.96f, 0.98f, 1f);
-            Color stateFillColor = EditorGUIUtility.isProSkin ? new Color(0.18f, 0.20f, 0.24f, 1f) : new Color(0.95f, 0.96f, 0.98f, 1f);
-            Color targetFillColor = EditorGUIUtility.isProSkin ? new Color(0.20f, 0.22f, 0.26f, 1f) : new Color(0.97f, 0.98f, 0.99f, 1f);
-            Color textColor = EditorGUIUtility.isProSkin ? new Color(0.92f, 0.95f, 0.98f, 1f) : new Color(0.20f, 0.24f, 0.29f, 1f);
-            Color mutedTextColor = EditorGUIUtility.isProSkin ? new Color(0.70f, 0.76f, 0.83f, 1f) : new Color(0.35f, 0.40f, 0.48f, 1f);
-
-            _toolbarCardStyle = CreateCardStyle(toolbarFillColor, new RectOffset(12, 12, 12, 12));
-            _headerCardStyle = CreateCardStyle(headerFillColor, new RectOffset(16, 16, 14, 14));
-            _stateCardStyle = CreateCardStyle(stateFillColor, new RectOffset(14, 14, 12, 12));
-            _targetCardStyle = CreateCardStyle(targetFillColor, new RectOffset(12, 12, 10, 10));
-
-            _headerTitleStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 17,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = textColor }
-            };
-
-            _headerSubtitleStyle = new GUIStyle(EditorStyles.wordWrappedMiniLabel)
-            {
-                fontSize = 12,
-                wordWrap = true,
-                normal = { textColor = mutedTextColor }
-            };
-
-            _toolbarFieldStyle = new GUIStyle(EditorStyles.helpBox)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                padding = new RectOffset(12, 12, 7, 7),
-                fontSize = 12,
-                normal = { textColor = textColor, background = CreateColorTexture(EditorGUIUtility.isProSkin ? new Color(0.20f, 0.23f, 0.28f, 1f) : new Color(0.96f, 0.97f, 0.99f, 1f)) }
-            };
-
-            _toolbarPopupStyle = new GUIStyle(EditorStyles.popup)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 12,
-                padding = new RectOffset(10, 30, 5, 5),
-                normal = { textColor = textColor, background = CreateColorTexture(EditorGUIUtility.isProSkin ? new Color(0.20f, 0.23f, 0.28f, 1f) : new Color(0.96f, 0.97f, 0.99f, 1f)) },
-                hover = { textColor = textColor, background = CreateColorTexture(EditorGUIUtility.isProSkin ? new Color(0.22f, 0.25f, 0.30f, 1f) : new Color(0.94f, 0.96f, 0.99f, 1f)) },
-                active = { textColor = textColor, background = CreateColorTexture(EditorGUIUtility.isProSkin ? new Color(0.22f, 0.25f, 0.30f, 1f) : new Color(0.94f, 0.96f, 0.99f, 1f)) },
-                focused = { textColor = textColor, background = CreateColorTexture(EditorGUIUtility.isProSkin ? new Color(0.20f, 0.23f, 0.28f, 1f) : new Color(0.96f, 0.97f, 0.99f, 1f)) }
-            };
-
-            _popupArrowColor = mutedTextColor;
-
-
-            _stateFoldoutStyle = new GUIStyle(EditorStyles.foldout)
-            {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = textColor },
-                onNormal = { textColor = textColor }
-            };
-
-            _mutedLabelStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                fontSize = 12,
-                normal = { textColor = mutedTextColor }
-            };
-
-            _rowLabelStyle = new GUIStyle(EditorStyles.label)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = mutedTextColor }
-            };
-
-            _summaryLabelStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                fontSize = 12,
-                alignment = TextAnchor.MiddleRight,
-                normal = { textColor = mutedTextColor }
-            };
-
-            _inlineValueLabelStyle = new GUIStyle(EditorStyles.miniLabel)
-            {
-                fontSize = 12,
-                normal = { textColor = textColor }
-            };
-
-            _showButtonStyle = CreateButtonStyle(
-                new Color(0.28f, 0.46f, 0.76f, 1f),
-                new Color(0.33f, 0.51f, 0.82f, 1f),
-                new Color(0.24f, 0.41f, 0.68f, 1f),
-                Color.white,
-                FontStyle.Bold,
-                new RectOffset(10, 10, 4, 4));
-
-            _secondaryButtonStyle = CreateButtonStyle(
-                EditorGUIUtility.isProSkin ? new Color(0.24f, 0.27f, 0.32f, 1f) : new Color(0.88f, 0.91f, 0.96f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.28f, 0.31f, 0.37f, 1f) : new Color(0.86f, 0.89f, 0.95f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.22f, 0.25f, 0.30f, 1f) : new Color(0.84f, 0.87f, 0.93f, 1f),
-                textColor,
-                FontStyle.Normal,
-                new RectOffset(10, 10, 4, 4));
-
-            _outlineButtonStyle = CreateButtonStyle(
-                EditorGUIUtility.isProSkin ? new Color(0.25f, 0.31f, 0.40f, 1f) : new Color(0.87f, 0.92f, 0.99f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.29f, 0.36f, 0.47f, 1f) : new Color(0.83f, 0.89f, 0.98f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.21f, 0.27f, 0.36f, 1f) : new Color(0.79f, 0.86f, 0.97f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.95f, 0.98f, 1f, 1f) : new Color(0.15f, 0.23f, 0.35f, 1f),
-                FontStyle.Bold,
-                new RectOffset(12, 12, 6, 6));
-
-            _outlineButtonDisabledStyle = CreateButtonStyle(
-                EditorGUIUtility.isProSkin ? new Color(0.16f, 0.19f, 0.24f, 1f) : new Color(0.91f, 0.94f, 0.98f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.16f, 0.19f, 0.24f, 1f) : new Color(0.91f, 0.94f, 0.98f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.16f, 0.19f, 0.24f, 1f) : new Color(0.91f, 0.94f, 0.98f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.72f, 0.79f, 0.88f, 1f) : new Color(0.42f, 0.49f, 0.58f, 1f),
-                FontStyle.Bold,
-                new RectOffset(12, 12, 6, 6));
-
-            _primaryAddButtonStyle = CreateButtonStyle(
-                new Color(0.31f, 0.53f, 0.88f, 1f),
-                new Color(0.36f, 0.58f, 0.93f, 1f),
-                new Color(0.27f, 0.47f, 0.80f, 1f),
-                Color.white,
-                FontStyle.Bold,
-                new RectOffset(12, 12, 7, 7));
-
-            _iconButtonStyle = CreateButtonStyle(
-                EditorGUIUtility.isProSkin ? new Color(0.22f, 0.25f, 0.30f, 1f) : new Color(0.90f, 0.93f, 0.97f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.26f, 0.29f, 0.34f, 1f) : new Color(0.88f, 0.91f, 0.96f, 1f),
-                EditorGUIUtility.isProSkin ? new Color(0.20f, 0.22f, 0.27f, 1f) : new Color(0.86f, 0.89f, 0.94f, 1f),
-                mutedTextColor,
-                FontStyle.Bold,
-                new RectOffset(4, 4, 4, 4));
-        }
-
-        private void DrawWindowBackground()
-        {
-            Color backgroundColor = EditorGUIUtility.isProSkin
-                ? new Color(0.14f, 0.16f, 0.19f, 1f)
-                : new Color(0.90f, 0.93f, 0.97f, 1f);
-            EditorGUI.DrawRect(new Rect(0f, 0f, position.width, position.height), backgroundColor);
-        }
-
-        private void DrawReadOnlyObjectRow(string labelText, UnityEngine.Object value, System.Type defaultType)
-        {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(labelText, _rowLabelStyle, GUILayout.Width(RowLabelWidth), GUILayout.Height(24f));
-            using (new EditorGUI.DisabledScope(true))
-            {
-                System.Type objectType = value != null ? value.GetType() : defaultType;
-                EditorGUILayout.ObjectField(value, objectType, true, GUILayout.Height(24f));
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private GUIContent GetIconContent(string text, string iconName, System.Type objectType)
-        {
-            Texture image = null;
-            if (image == null && string.IsNullOrEmpty(iconName) == false)
-            {
-                GUIContent iconContent = EditorGUIUtility.IconContent(iconName);
-                image = iconContent?.image;
-            }
-
-            if (image == null && objectType != null)
-            {
-                GUIContent typeContent = EditorGUIUtility.ObjectContent(null, objectType);
-                image = typeContent?.image;
-            }
-
-            return image != null ? new GUIContent($" {text}", image) : new GUIContent(text);
-        }
-
-        private void DrawPopupArrow()
-        {
-            if (Event.current.type != EventType.Repaint)
-            {
-                return;
-            }
-
-            Rect popupRect = GUILayoutUtility.GetLastRect();
-            if (popupRect.width <= 0f || popupRect.height <= 0f)
-            {
-                return;
-            }
-
-            Rect arrowRect = new Rect(popupRect.xMax - PopupArrowWidth - 4f, popupRect.y, PopupArrowWidth, popupRect.height);
-            Vector2 center = arrowRect.center;
-            float halfWidth = PopupArrowSize * 0.5f;
-            float halfHeight = PopupArrowSize * 0.35f;
-
-            Handles.BeginGUI();
-            Color oldColor = Handles.color;
-            Handles.color = _popupArrowColor;
-            Handles.DrawAAConvexPolygon(
-                new Vector3(center.x - halfWidth, center.y - halfHeight),
-                new Vector3(center.x + halfWidth, center.y - halfHeight),
-                new Vector3(center.x, center.y + halfHeight));
-            Handles.color = oldColor;
-            Handles.EndGUI();
-        }
-
-        private GUIStyle CreateCardStyle(Color fillColor, RectOffset padding)
-        {
-            return new GUIStyle(EditorStyles.helpBox)
-            {
-                margin = new RectOffset(0, 0, 0, 0),
-                padding = padding,
-                normal = { background = CreateColorTexture(fillColor) }
-            };
-        }
-
-        private GUIStyle CreateButtonStyle(Color normalColor, Color hoverColor, Color activeColor, Color textColor, FontStyle fontStyle, RectOffset padding)
-        {
-            GUIStyle style = new GUIStyle(GUI.skin.button)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = fontStyle,
-                fontSize = 12,
-                margin = new RectOffset(0, 0, 0, 0),
-                padding = new RectOffset(padding.left, padding.right, Math.Max(2, padding.top - 2), Math.Max(2, padding.bottom - 2)),
-                clipping = TextClipping.Overflow,
-                wordWrap = false,
-                contentOffset = Vector2.zero
-            };
-
-            Texture2D normalTexture = CreateColorTexture(normalColor);
-            Texture2D hoverTexture = CreateColorTexture(hoverColor);
-            Texture2D activeTexture = CreateColorTexture(activeColor);
-
-            style.normal.background = normalTexture;
-            style.hover.background = hoverTexture;
-            style.active.background = activeTexture;
-            style.focused.background = normalTexture;
-            style.onNormal.background = normalTexture;
-            style.onHover.background = hoverTexture;
-            style.onActive.background = activeTexture;
-            style.onFocused.background = normalTexture;
-
-            style.normal.textColor = textColor;
-            style.hover.textColor = textColor;
-            style.active.textColor = textColor;
-            style.focused.textColor = textColor;
-            style.onNormal.textColor = textColor;
-            style.onHover.textColor = textColor;
-            style.onActive.textColor = textColor;
-            style.onFocused.textColor = textColor;
-            return style;
-        }
-
-        private Texture2D CreateColorTexture(Color color)
-        {
-            Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-            texture.SetPixel(0, 0, color);
-            texture.Apply();
-            return texture;
-        }
-
-        private Color GetCardBorderColor(bool isTargetBlock)
-        {
-            if (EditorGUIUtility.isProSkin)
-            {
-                return isTargetBlock
-                    ? new Color(0.28f, 0.32f, 0.38f, 1f)
-                    : new Color(0.31f, 0.36f, 0.43f, 1f);
-            }
-
-            return isTargetBlock
-                ? new Color(0.80f, 0.84f, 0.90f, 1f)
-                : new Color(0.76f, 0.82f, 0.89f, 1f);
+            return $"{targetList.Count} targets  |  {propertyCount} controls";
         }
         #endregion
     }

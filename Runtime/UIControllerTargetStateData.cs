@@ -9,8 +9,10 @@ namespace Windsmoon.UIController
     public class UIControllerTargetStateData
     {
         #region fields
-        [SerializeField]
+#if UNITY_EDITOR
+        [SerializeField, Obsolete("Legacy target name for manual migration only.")]
         private string _name;
+#endif
         [SerializeReference]
         private List<UIControllerProperty> _propertyList = new List<UIControllerProperty>();
 
@@ -18,27 +20,22 @@ namespace Windsmoon.UIController
         #endregion
 
         #region properties
+#if UNITY_EDITOR
+#pragma warning disable CS0618
         public string Name
         {
             get => _name;
             set => _name = value;
         }
+#pragma warning restore CS0618
+#endif
 
         public List<UIControllerProperty> PropertyList => _propertyList;
-        public IReadOnlyDictionary<string, UIControllerProperty> PropertyDict
-        {
-            get
-            {
-                EnsurePropertyDict();
-                return _propertyDict;
-            }
-        }
         #endregion
 
         #region methods
         public void RebuildCache()
         {
-            EnsurePropertyList();
             _propertyDict = new Dictionary<string, UIControllerProperty>(_propertyList.Count);
 
             for (int i = 0; i < _propertyList.Count; i++)
@@ -67,7 +64,6 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            EnsurePropertyList();
             RemoveProperty(property.Name);
             _propertyList.Add(property);
             EnsurePropertyDict();
@@ -81,7 +77,6 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            EnsurePropertyList();
             for (int i = _propertyList.Count - 1; i >= 0; i--)
             {
                 UIControllerProperty property = _propertyList[i];
@@ -107,14 +102,6 @@ namespace Windsmoon.UIController
             }
 
             RebuildCache();
-        }
-
-        private void EnsurePropertyList()
-        {
-            if (_propertyList == null)
-            {
-                _propertyList = new List<UIControllerProperty>();
-            }
         }
         #endregion
     }
