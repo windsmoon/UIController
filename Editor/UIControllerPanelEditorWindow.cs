@@ -17,6 +17,8 @@ namespace Windsmoon.UIController.Editor
         private const float CaptureButtonWidth = 68f;
         private const float RowLabelWidth = 118f;
         private const float PropertyPopupWidth = 170f;
+        private const float PropertySlotWidth = 210f;
+        private const float PropertySlotSpacing = 8f;
         private const float AnimationToggleWidth = 88f;
 
         #region fields
@@ -326,36 +328,96 @@ namespace Windsmoon.UIController.Editor
         private void DrawControllerPropertyList(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData)
         {
             List<string> propertyNameList = targetData.PropertyNameList;
-            if (propertyNameList.Count == 0)
+            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyNameList, -1);
+            int slotCount = propertyNameList.Count + (availableDefinitionList.Count > 0 ? 1 : 0);
+            if (slotCount == 0)
             {
                 EditorGUILayout.HelpBox("No controlled properties for this target.", MessageType.Info);
+                return;
             }
 
+            int columnCount = GetPropertyGridColumnCount();
+            for (int slotIndex = 0; slotIndex < slotCount; slotIndex += columnCount)
+            {
+                EditorGUILayout.BeginHorizontal();
+                for (int columnIndex = 0; columnIndex < columnCount && slotIndex + columnIndex < slotCount; columnIndex++)
+                {
+                    if (columnIndex > 0)
+                    {
+                        GUILayout.Space(PropertySlotSpacing);
+                    }
+
+                    int currentSlotIndex = slotIndex + columnIndex;
+                    if (currentSlotIndex < propertyNameList.Count)
+                    {
+                        if (DrawControllerPropertySlot(controllerData, targetIndex, propertyNameList, currentSlotIndex))
+                        {
+                            EditorGUILayout.EndHorizontal();
+                            return;
+                        }
+
+                        continue;
+                    }
+
+                    if (DrawAddControllerPropertySlot(controllerData, targetIndex, availableDefinitionList))
+                    {
+                        EditorGUILayout.EndHorizontal();
+                        return;
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            DrawControllerPropertyValidation(propertyNameList);
+        }
+
+        private bool DrawControllerPropertySlot(UIControllerData controllerData, int targetIndex, List<string> propertyNameList, int propertyIndex)
+        {
+            string propertyName = propertyNameList[propertyIndex];
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(PropertySlotWidth));
+            if (DrawPropertyDefinitionPopup(propertyNameList, propertyIndex, propertyName, out string newPropertyName))
+            {
+                int capturedPropertyIndex = propertyIndex;
+                string capturedPropertyName = newPropertyName;
+                ApplyMutation("Change UIController Property", () => ChangeControllerProperty(controllerData, targetIndex, capturedPropertyIndex, capturedPropertyName));
+                EditorGUILayout.EndHorizontal();
+                return true;
+            }
+
+            if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
+            {
+                int capturedPropertyIndex = propertyIndex;
+                ApplyMutation("Delete UIController Property", () => DeleteControllerProperty(controllerData, targetIndex, capturedPropertyIndex));
+                EditorGUILayout.EndHorizontal();
+                return true;
+            }
+
+            EditorGUILayout.EndHorizontal();
+            return false;
+        }
+
+        private bool DrawAddControllerPropertySlot(UIControllerData controllerData, int targetIndex, List<UIControllerPropertyDefinition> availableDefinitionList)
+        {
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(PropertySlotWidth));
+            if (GUILayout.Button("+ Add Property", GUILayout.Width(PropertyPopupWidth + DeleteButtonWidth), GUILayout.Height(20f)))
+            {
+                string propertyName = availableDefinitionList[0].Name;
+                ApplyMutation("Add UIController Property", () => AddControllerProperty(controllerData, targetIndex, propertyName));
+                EditorGUILayout.EndHorizontal();
+                return true;
+            }
+
+            EditorGUILayout.EndHorizontal();
+            return false;
+        }
+
+        private void DrawControllerPropertyValidation(List<string> propertyNameList)
+        {
             for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
             {
                 string propertyName = propertyNameList[propertyIndex];
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Label("Property", GUILayout.Width(RowLabelWidth));
-
-                if (DrawPropertyDefinitionPopup(propertyNameList, propertyIndex, propertyName, out string newPropertyName))
-                {
-                    int capturedPropertyIndex = propertyIndex;
-                    string capturedPropertyName = newPropertyName;
-                    ApplyMutation("Change UIController Property", () => ChangeControllerProperty(controllerData, targetIndex, capturedPropertyIndex, capturedPropertyName));
-                    EditorGUILayout.EndHorizontal();
-                    return;
-                }
-
-                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
-                {
-                    int capturedPropertyIndex = propertyIndex;
-                    ApplyMutation("Delete UIController Property", () => DeleteControllerProperty(controllerData, targetIndex, capturedPropertyIndex));
-                    EditorGUILayout.EndHorizontal();
-                    return;
-                }
-
-                EditorGUILayout.EndHorizontal();
-
                 if (string.IsNullOrWhiteSpace(propertyName))
                 {
                     EditorGUILayout.HelpBox("Property name is empty.", MessageType.Error);
@@ -365,16 +427,12 @@ namespace Windsmoon.UIController.Editor
                     EditorGUILayout.HelpBox($"Property {propertyName} is not registered in UIControllerPropertyFactory.", MessageType.Warning);
                 }
             }
+        }
 
-            List<UIControllerPropertyDefinition> availableDefinitionList = GetAvailablePropertyDefinitionList(propertyNameList, -1);
-            using (new EditorGUI.DisabledScope(availableDefinitionList.Count == 0))
-            {
-                if (GUILayout.Button("+ Add Property", GUILayout.Height(24f)))
-                {
-                    string propertyName = availableDefinitionList[0].Name;
-                    ApplyMutation("Add UIController Property", () => AddControllerProperty(controllerData, targetIndex, propertyName));
-                }
-            }
+        private int GetPropertyGridColumnCount()
+        {
+            float availableWidth = Mathf.Max(PropertySlotWidth, EditorGUIUtility.currentViewWidth - 96f);
+            return Mathf.Max(1, Mathf.FloorToInt((availableWidth + PropertySlotSpacing) / (PropertySlotWidth + PropertySlotSpacing)));
         }
 
         private bool DrawPropertyDefinitionPopup(List<string> propertyNameList, int propertyIndex, string propertyName, out string newPropertyName)
