@@ -57,7 +57,7 @@ UIController 是一个用于 Unity UI 状态控制的 Package，适合构建可�
 
 ### Migration From Older Versions
 
-The current version changes the serialized data layout. Older versions stored target and property data under each state. The current version defines targets and controlled property names once under each controller, while every state only stores the values for those target/property slots.
+This migration upgrades data from versions earlier than v0.5.0 to v0.5.0. v0.5.0 changes the serialized data layout: older versions stored target and property data under each state, while v0.5.0 defines targets and controlled property names once under each controller. Every state now only stores the values for those target/property slots.
 
 Before migration, commit or back up your project data. After migration, check the Console warnings and verify the referenced prefabs, controllers, states, targets, and properties.
 
@@ -76,7 +76,7 @@ The same migration notice can also appear in `Window > Framework > UI > UIContro
 Use this when you need to migrate every `UIControllerPanel` inside prefabs under selected folders.
 
 1. Select one or more folders in the Project window.
-2. Open `UIController > UIController Legacy Migration`.
+2. Open `UIController/UIController Legacy Migration`.
 3. Confirm the selected folders in the `UIController Migration` window.
 4. Click `Migrate Selected Folder Prefabs`.
 5. The tool recursively finds prefabs under the selected folders, loads prefab contents, scans all active and inactive `UIControllerPanel` components, and migrates only panels that need migration.
@@ -319,7 +319,7 @@ new UIControllerPropertyDefinition(
 
 - Inspector integration for `UIControllerPanel`.
 - Dedicated editor window: **Window > Framework > UI > UIController Panel**.
-- Batch migration window: **UIController > UIController Legacy Migration**.
+- Batch migration window: **UIController/UIController Legacy Migration**.
 - Controller, state, target, and property dropdowns.
 - Collapsible **Controller Targets** section.
 - One visible state at a time, selected through a state dropdown.
@@ -389,7 +389,7 @@ MIT. See [LICENSE](LICENSE).
 
 ### 从旧版本迁移数据
 
-当前版本调整了序列化结构。旧版本把 target 和 property 数据存放在每个 state 下面；当前版本把 target 和 property 名称提升到 controller 下面统一定义，每个 state 只保存对应 target/property 槽位的状态值。
+这里的迁移指从 v0.5.0 以下版本迁移到 v0.5.0。v0.5.0 调整了序列化结构：旧版本把 target 和 property 数据存放在每个 state 下面；v0.5.0 把 target 和 property 名称提升到 controller 下面统一定义，每个 state 只保存对应 target/property 槽位的状态值。
 
 迁移前建议先提交或备份项目数据。迁移完成后，如果 Console 出现 warning，需要逐条检查对应 prefab、controller、state、target 或 property 是否符合预期。
 
@@ -408,7 +408,7 @@ MIT. See [LICENSE](LICENSE).
 用于一次处理选中文件夹下所有 prefab 中的 `UIControllerPanel`。
 
 1. 在 Project 窗口选中一个或多个文件夹。
-2. 打开菜单 **UIController > UIController Legacy Migration**。
+2. 打开菜单 **UIController/UIController Legacy Migration**。
 3. 在弹出的 `UIController Migration` 窗口中确认选中的文件夹。
 4. 点击 `Migrate Selected Folder Prefabs`。
 5. 工具会递归查找选中文件夹下的所有 prefab，加载 prefab contents，遍历其中所有 active 和 inactive 的 `UIControllerPanel`，只迁移确实需要迁移的数据。
@@ -651,7 +651,7 @@ new UIControllerPropertyDefinition(
 
 - `UIControllerPanel` 的 Inspector 集成。
 - 独立编辑窗口：**Window > Framework > UI > UIController Panel**。
-- 批量迁移窗口：**UIController > UIController Legacy Migration**。
+- 批量迁移窗口：**UIController/UIController Legacy Migration**。
 - Controller、State、Target、Property 下拉选择。
 - **Controller Targets** 区域可以整体收起。
 - State 区域一次只显示一个 state，并通过下拉框选择。
