@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | UIController</title>
+    <title>Unity Web Player | UnityProject</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
   </head>
@@ -20,7 +20,7 @@
       <div id="unity-footer">
         <div id="unity-logo-title-footer"></div>
         <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">UIController</div>
+        <div id="unity-build-title">UnityProject</div>
       </div>
     </div>
     <script>
@@ -55,13 +55,13 @@
       var loaderUrl = buildUrl + "/Release.loader.js";
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/Release.data",
-        frameworkUrl: buildUrl + "/Release.framework.js",
-        codeUrl: buildUrl + "/Release.wasm",
+        dataUrl: buildUrl + "/Release.data.br",
+        frameworkUrl: buildUrl + "/Release.framework.js.br",
+        codeUrl: buildUrl + "/Release.wasm.br",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "Windsmoon",
-        productName: "UIController",
-        productVersion: "0.3.0",
+        companyName: "DefaultCompany",
+        productName: "UnityProject",
+        productVersion: "1.0",
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
