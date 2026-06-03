@@ -32,12 +32,48 @@ jobs:
         run: |
           test -f 'UnityProject~/Bin/Web/Release/index.html'
           test -f 'UnityProject~/Bin/Web/Release/Build/Release.loader.js'
-          test -f 'UnityProject~/Bin/Web/Release/Build/Release.data'
-          test -f 'UnityProject~/Bin/Web/Release/Build/Release.framework.js'
-          test -f 'UnityProject~/Bin/Web/Release/Build/Release.wasm'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.data' || test -f 'UnityProject~/Bin/Web/Release/Build/Release.data.br'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.framework.js' || test -f 'UnityProject~/Bin/Web/Release/Build/Release.framework.js.br'
+          test -f 'UnityProject~/Bin/Web/Release/Build/Release.wasm' || test -f 'UnityProject~/Bin/Web/Release/Build/Release.wasm.br'
 
       - name: Prepare Pages content
-        run: touch 'UnityProject~/Bin/Web/Release/.nojekyll'
+        env:
+          PAGES_DIR: ${{ runner.temp }}/uicontroller-pages
+        run: |
+          rm -rf "$PAGES_DIR"
+          mkdir -p "$PAGES_DIR"
+          cp -a 'UnityProject~/Bin/Web/Release/.' "$PAGES_DIR/"
+          touch "$PAGES_DIR/.nojekyll"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const zlib = require('zlib');
+
+          const pagesDir = process.env.PAGES_DIR;
+          const buildDir = path.join(pagesDir, 'Build');
+          const files = ['Release.data', 'Release.framework.js', 'Release.wasm'];
+
+          for (const file of files) {
+            const target = path.join(buildDir, file);
+            const compressed = `${target}.br`;
+            if (!fs.existsSync(target) && fs.existsSync(compressed)) {
+              fs.writeFileSync(target, zlib.brotliDecompressSync(fs.readFileSync(compressed)));
+            }
+          }
+
+          const indexPath = path.join(pagesDir, 'index.html');
+          const html = fs.readFileSync(indexPath, 'utf8')
+            .replaceAll('Release.data.br', 'Release.data')
+            .replaceAll('Release.framework.js.br', 'Release.framework.js')
+            .replaceAll('Release.wasm.br', 'Release.wasm');
+          fs.writeFileSync(indexPath, html);
+          NODE
+          find "$PAGES_DIR/Build" -name '*.br' -delete
+          test -f "$PAGES_DIR/index.html"
+          test -f "$PAGES_DIR/Build/Release.loader.js"
+          test -f "$PAGES_DIR/Build/Release.data"
+          test -f "$PAGES_DIR/Build/Release.framework.js"
+          test -f "$PAGES_DIR/Build/Release.wasm"
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
@@ -45,7 +81,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: "UnityProject~/Bin/Web/Release"
+          path: ${{ runner.temp }}/uicontroller-pages
 
       - name: Deploy to GitHub Pages
         id: deployment
