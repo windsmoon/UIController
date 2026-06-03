@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using Windsmoon.UIController;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Windsmoon.UIController.Editor
@@ -13,26 +14,24 @@ namespace Windsmoon.UIController.Editor
         private const float OpenButtonWidth = 56f;
 
         #region fields
-        private SerializedProperty _controllerTargetBindingListProp;
+        private SerializedProperty _dataVersionProp;
         private SerializedProperty _controllerListProp;
-        private readonly HashSet<string> _duplicateControllerTargetNameSet = new HashSet<string>();
         #endregion
 
         #region methods
         private void OnEnable()
         {
-            _controllerTargetBindingListProp = serializedObject.FindProperty("_controllerTargetBindingList");
+            _dataVersionProp = serializedObject.FindProperty("_dataVersion");
             _controllerListProp = serializedObject.FindProperty("_controllerList");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            RefreshControllerTargetValidation();
 
             DrawOverview();
             EditorGUILayout.Space(4f);
-            DrawControllerTargetBindingList();
+            DrawMigrationNotice();
             EditorGUILayout.Space(6f);
             DrawControllerList();
 
@@ -45,75 +44,32 @@ namespace Windsmoon.UIController.Editor
             EditorGUILayout.LabelField("UIController Panel", EditorStyles.boldLabel);
 
             StringBuilder summaryBuilder = new StringBuilder();
-            summaryBuilder.Append("Controllers ");
+            summaryBuilder.Append("Data Version ");
+            summaryBuilder.Append(_dataVersionProp?.intValue ?? 0);
+            summaryBuilder.Append("  |  Controllers ");
             summaryBuilder.Append(_controllerListProp.arraySize);
-            summaryBuilder.Append("  |  Targets ");
-            summaryBuilder.Append(_controllerTargetBindingListProp.arraySize);
 
             EditorGUILayout.LabelField(summaryBuilder.ToString(), EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
         }
 
-        private void DrawControllerTargetBindingList()
+        private void DrawMigrationNotice()
         {
-            DrawSectionHeader("Controller Targets", $"{_controllerTargetBindingListProp.arraySize} bindings");
-
-            if (_duplicateControllerTargetNameSet.Count > 0)
+            UIControllerPanel uiControllerPanel = (UIControllerPanel)target;
+            if (uiControllerPanel.NeedsLegacyMigration() == false)
             {
-                EditorGUILayout.HelpBox($"Controller target name duplicated: {string.Join(", ", _duplicateControllerTargetNameSet)}", MessageType.Error);
+                return;
             }
 
-            if (_controllerTargetBindingListProp.arraySize == 0)
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.HelpBox("Legacy state-level target/property data was detected. Run manual migration before editing in the panel window.", MessageType.Warning);
+            if (GUILayout.Button("Migrate Legacy Data To Controller Targets"))
             {
-                EditorGUILayout.HelpBox("Add controller targets first so UIControllers can bind to concrete UI nodes.", MessageType.Info);
+                serializedObject.ApplyModifiedProperties();
+                RunManualMigration(uiControllerPanel);
+                serializedObject.Update();
             }
-
-            for (int i = 0; i < _controllerTargetBindingListProp.arraySize; i++)
-            {
-                SerializedProperty bindingProp = _controllerTargetBindingListProp.GetArrayElementAtIndex(i);
-                SerializedProperty nameProp = bindingProp.FindPropertyRelative("Name");
-                SerializedProperty rectTransformProp = bindingProp.FindPropertyRelative("RectTransform");
-                RectTransform rectTransform = rectTransformProp.objectReferenceValue as RectTransform;
-                string header = GetTargetDisplayName(nameProp.stringValue, i);
-                string summary = rectTransform == null ? "No RectTransform" : rectTransform.name;
-
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(header, EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(summary, EditorStyles.miniLabel);
-                if (GUILayout.Button("X", EditorStyles.miniButton, GUILayout.Width(DeleteButtonWidth)))
-                {
-                    DeleteArrayElement(_controllerTargetBindingListProp, i);
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.EndVertical();
-                    return;
-                }
-                EditorGUILayout.EndHorizontal();
-
-                string oldTargetName = nameProp.stringValue;
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(nameProp, new GUIContent("Name"));
-                if (EditorGUI.EndChangeCheck())
-                {
-                    RenameControllerTargetReferences(oldTargetName, nameProp.stringValue);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(rectTransformProp, new GUIContent("RectTransform"));
-                if (EditorGUI.EndChangeCheck() && string.IsNullOrEmpty(nameProp.stringValue) && rectTransformProp.objectReferenceValue is RectTransform autoNamedRectTransform)
-                {
-                    nameProp.stringValue = autoNamedRectTransform.name;
-                }
-                EditorGUILayout.EndVertical();
-            }
-
-            if (GUILayout.Button("Add Controller Target"))
-            {
-                int index = _controllerTargetBindingListProp.arraySize;
-                _controllerTargetBindingListProp.InsertArrayElementAtIndex(index);
-                ResetControllerTargetBinding(_controllerTargetBindingListProp.GetArrayElementAtIndex(index));
-            }
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawControllerList()
@@ -129,12 +85,15 @@ namespace Windsmoon.UIController.Editor
             {
                 SerializedProperty controllerProp = _controllerListProp.GetArrayElementAtIndex(i);
                 SerializedProperty controllerNameProp = controllerProp.FindPropertyRelative("_name");
+                SerializedProperty targetListProp = controllerProp.FindPropertyRelative("_targetList");
+                SerializedProperty stateListProp = controllerProp.FindPropertyRelative("_stateList");
                 string header = GetControllerDisplayName(controllerNameProp.stringValue, i);
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField(header, EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
+                GUILayout.Label($"{targetListProp.arraySize} targets  |  {stateListProp.arraySize} states", EditorStyles.miniLabel);
 
                 if (GUILayout.Button("Open", EditorStyles.miniButton, GUILayout.Width(OpenButtonWidth)))
                 {
@@ -163,16 +122,11 @@ namespace Windsmoon.UIController.Editor
             }
         }
 
-        private void ResetControllerTargetBinding(SerializedProperty bindingProp)
-        {
-            bindingProp.FindPropertyRelative("Name").stringValue = string.Empty;
-            bindingProp.FindPropertyRelative("RectTransform").objectReferenceValue = null;
-        }
-
         private void ResetController(SerializedProperty controllerProp)
         {
             controllerProp.isExpanded = true;
             controllerProp.FindPropertyRelative("_name").stringValue = string.Empty;
+            controllerProp.FindPropertyRelative("_targetList").arraySize = 0;
             controllerProp.FindPropertyRelative("_stateList").arraySize = 0;
         }
 
@@ -187,57 +141,26 @@ namespace Windsmoon.UIController.Editor
             }
         }
 
-        private void RefreshControllerTargetValidation()
+        private void RunManualMigration(UIControllerPanel uiControllerPanel)
         {
-            _duplicateControllerTargetNameSet.Clear();
-
-            HashSet<string> existingNameSet = new HashSet<string>();
-
-            for (int i = 0; i < _controllerTargetBindingListProp.arraySize; i++)
+            Undo.RecordObject(uiControllerPanel, "Migrate UIController Legacy Data");
+            List<string> warningList = uiControllerPanel.MigrateLegacyDataToControllerTargets();
+            EditorUtility.SetDirty(uiControllerPanel);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(uiControllerPanel);
+            if (uiControllerPanel.gameObject.scene.IsValid())
             {
-                SerializedProperty bindingProp = _controllerTargetBindingListProp.GetArrayElementAtIndex(i);
-                string name = bindingProp.FindPropertyRelative("Name").stringValue;
-
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                if (existingNameSet.Add(name))
-                {
-                    continue;
-                }
-
-                _duplicateControllerTargetNameSet.Add(name);
-            }
-        }
-
-        private void RenameControllerTargetReferences(string oldTargetName, string newTargetName)
-        {
-            if (string.IsNullOrWhiteSpace(oldTargetName) || oldTargetName == newTargetName)
-            {
-                return;
+                EditorSceneManager.MarkSceneDirty(uiControllerPanel.gameObject.scene);
             }
 
-            for (int controllerIndex = 0; controllerIndex < _controllerListProp.arraySize; controllerIndex++)
+            for (int i = 0; i < warningList.Count; i++)
             {
-                SerializedProperty controllerProp = _controllerListProp.GetArrayElementAtIndex(controllerIndex);
-                SerializedProperty stateListProp = controllerProp.FindPropertyRelative("_stateList");
-                for (int stateIndex = 0; stateIndex < stateListProp.arraySize; stateIndex++)
-                {
-                    SerializedProperty stateProp = stateListProp.GetArrayElementAtIndex(stateIndex);
-                    SerializedProperty targetStateListProp = stateProp.FindPropertyRelative("_targetStateList");
-                    for (int targetIndex = 0; targetIndex < targetStateListProp.arraySize; targetIndex++)
-                    {
-                        SerializedProperty targetStateProp = targetStateListProp.GetArrayElementAtIndex(targetIndex);
-                        SerializedProperty targetNameProp = targetStateProp.FindPropertyRelative("_name");
-                        if (targetNameProp.stringValue == oldTargetName)
-                        {
-                            targetNameProp.stringValue = newTargetName;
-                        }
-                    }
-                }
+                Debug.LogWarning(warningList[i], uiControllerPanel);
             }
+
+            string message = warningList.Count == 0
+                ? "Legacy data migration completed."
+                : $"Legacy data migration completed with {warningList.Count} warning(s). Check Console for details.";
+            EditorUtility.DisplayDialog("UIController Migration", message, "OK");
         }
 
         private void DrawSectionHeader(string title, string summary)
@@ -255,11 +178,6 @@ namespace Windsmoon.UIController.Editor
         private string GetControllerDisplayName(string controllerName, int index)
         {
             return string.IsNullOrWhiteSpace(controllerName) ? $"Controller {index + 1}" : controllerName;
-        }
-
-        private string GetTargetDisplayName(string targetName, int index)
-        {
-            return string.IsNullOrWhiteSpace(targetName) ? $"Target {index + 1}" : targetName;
         }
         #endregion
     }

@@ -43,11 +43,17 @@ namespace Windsmoon.UIController
 
         #region fields
         [SerializeField]
+        private int _dataVersion = 1;
+#if UNITY_EDITOR
+#pragma warning disable CS0618
+        [SerializeField, HideInInspector, Obsolete("Legacy data for manual migration only.")]
         private List<UIControllerTargetBinding> _controllerTargetBindingList = new List<UIControllerTargetBinding>();
+#pragma warning restore CS0618
+#endif
         [SerializeField]
         private List<UIControllerData> _controllerList = new List<UIControllerData>();
+
         private Dictionary<string, UIControllerData> _controllerDict;
-        private Dictionary<string, RectTransform> _controllerTargetDict;
         private Dictionary<UIControllerTweenKey, Tween> _propertyTweenDict;
 #if UNITY_EDITOR
         public event Action PreviewAnimationCompleted;
@@ -57,8 +63,13 @@ namespace Windsmoon.UIController
         #endregion
 
         #region properties
-        public List<UIControllerTargetBinding> ControllerTargetBindingList => _controllerTargetBindingList;
+        public int DataVersion => _dataVersion;
         public List<UIControllerData> ControllerList => _controllerList;
+#if UNITY_EDITOR
+#pragma warning disable CS0618
+        public List<UIControllerTargetBinding> LegacyControllerTargetBindingList => _controllerTargetBindingList;
+#pragma warning restore CS0618
+#endif
         #endregion
 
         #region interface impls
@@ -69,15 +80,14 @@ namespace Windsmoon.UIController
         public void OnAfterDeserialize()
         {
             DeserializeControllerDict();
-            DeserializeControllerTargetDict(false);
-            DeserializeStateDicts();
+            DeserializeStateCaches();
         }
         #endregion
 
         #region methods
         public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
         {
-            if (_controllerDict == null || _controllerTargetDict == null)
+            if (_controllerDict == null)
             {
                 return;
             }
@@ -93,7 +103,7 @@ namespace Windsmoon.UIController
 
             UIControllerData controllerData = FindController(controllerName);
             UIControllerStateData stateData = FindState(controllerData, stateIndex);
-            ApplyControllerState(stateData, forceNoAnimation);
+            ApplyControllerState(controllerData, stateData, forceNoAnimation);
         }
 
         public bool HasController(string controllerName)
@@ -118,16 +128,55 @@ namespace Windsmoon.UIController
             return stateIndex < stateList.Count;
         }
 
+#if UNITY_EDITOR
+        public bool NeedsLegacyMigration()
+        {
+            List<UIControllerData> controllerList = ControllerList;
+            for (int i = 0; i < controllerList.Count; i++)
+            {
+                if (ControllerNeedsLegacyMigration(controllerList[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public List<string> MigrateLegacyDataToControllerTargets()
+        {
+            List<string> warningList = new List<string>();
+            Dictionary<string, RectTransform> legacyTargetBindingDict = BuildLegacyTargetBindingDict(warningList);
+            List<UIControllerData> controllerList = ControllerList;
+
+            for (int controllerIndex = 0; controllerIndex < controllerList.Count; controllerIndex++)
+            {
+                UIControllerData controllerData = controllerList[controllerIndex];
+                if (ControllerNeedsLegacyMigration(controllerData) == false)
+                {
+                    continue;
+                }
+
+                MigrateLegacyController(controllerData, controllerIndex, legacyTargetBindingDict, warningList);
+            }
+
+            _dataVersion = 1;
+            DeserializeStateCaches();
+            return warningList;
+        }
+#endif
+
         private void DeserializeControllerDict()
         {
-            if (_controllerList == null || _controllerList.Count == 0)
+            List<UIControllerData> controllerList = ControllerList;
+            if (controllerList.Count == 0)
             {
                 _controllerDict = null;
                 return;
             }
 
-            _controllerDict = new Dictionary<string, UIControllerData>(_controllerList.Count);
-            foreach (UIControllerData controllerData in _controllerList)
+            _controllerDict = new Dictionary<string, UIControllerData>(controllerList.Count);
+            foreach (UIControllerData controllerData in controllerList)
             {
                 if (controllerData == null)
                 {
@@ -151,78 +200,21 @@ namespace Windsmoon.UIController
             }
         }
 
-        private void DeserializeControllerTargetDict(bool throwOnInvalid)
+        private void DeserializeStateCaches()
         {
-            if (_controllerDict == null || _controllerDict.Count == 0)
+            List<UIControllerData> controllerList = ControllerList;
+            for (int i = 0; i < controllerList.Count; i++)
             {
-                _controllerTargetDict = null;
-                return;
-            }
-
-            _controllerTargetDict = new Dictionary<string, RectTransform>(_controllerTargetBindingList.Count);
-            foreach (UIControllerTargetBinding binding in _controllerTargetBindingList)
-            {
-                bool hasTargetName = string.IsNullOrWhiteSpace(binding.Name) == false;
-                if (hasTargetName == false)
-                {
-                    if (throwOnInvalid)
-                    {
-                        throw new Exception("controller target binding has no name");
-                    }
-
-                    continue;
-                }
-
-                bool hasRectTransform = binding.RectTransform;
-                if (hasRectTransform == false)
-                {
-                    if (throwOnInvalid)
-                    {
-                        throw new Exception($"controller target binding {binding.Name} has no RectTransform");
-                    }
-
-                    continue;
-                }
-
-                if (_controllerTargetDict.ContainsKey(binding.Name))
-                {
-                    if (throwOnInvalid)
-                    {
-                        throw new Exception($"controller target binding name {binding.Name} duplicated");
-                    }
-
-                    continue;
-                }
-
-                _controllerTargetDict.Add(binding.Name, binding.RectTransform);
-            }
-        }
-
-        private void DeserializeStateDicts()
-        {
-            if (_controllerList == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _controllerList.Count; i++)
-            {
-                UIControllerData controllerData = _controllerList[i];
+                UIControllerData controllerData = controllerList[i];
                 if (controllerData == null)
                 {
                     continue;
                 }
 
                 List<UIControllerStateData> stateList = controllerData.StateList;
-                if (stateList == null)
-                {
-                    continue;
-                }
-
                 for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
                 {
-                    UIControllerStateData stateData = stateList[stateIndex];
-                    stateData?.RebuildCache();
+                    stateList[stateIndex]?.RebuildCache();
                 }
             }
         }
@@ -254,7 +246,7 @@ namespace Windsmoon.UIController
             return stateData;
         }
 
-        private void ApplyControllerState(UIControllerStateData stateData, bool forceNoAnimation)
+        private void ApplyControllerState(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation)
         {
             KillTweens();
 
@@ -265,47 +257,72 @@ namespace Windsmoon.UIController
             }
 #endif
 
-            foreach (UIControllerTargetStateData targetStateData in stateData.TargetStateDict.Values)
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+            for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
             {
-                ApplyTargetState(targetStateData, forceNoAnimation);
+                UIControllerTargetData targetData = targetList[targetIndex];
+                if (targetData == null)
+                {
+                    continue;
+                }
+
+                List<string> propertyNameList = targetData.PropertyNameList;
+                if (propertyNameList.Count == 0)
+                {
+                    continue;
+                }
+
+                if (targetIndex >= targetStateList.Count || targetStateList[targetIndex] == null)
+                {
+                    throw new Exception($"controller {controllerData.Name} state data is missing target state index {targetIndex} on panel {name}");
+                }
+
+                RectTransform rectTransform = targetData.RectTransform;
+                if (rectTransform == null)
+                {
+                    throw new Exception($"controller {controllerData.Name} target index {targetIndex} has no RectTransform on panel {name}");
+                }
+
+                ApplyTargetState(controllerData, targetIndex, targetData, targetStateList[targetIndex], forceNoAnimation);
             }
         }
 
-        private void ApplyTargetState(UIControllerTargetStateData targetStateData, bool forceNoAnimation)
+        private void ApplyTargetState(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData, UIControllerTargetStateData targetStateData, bool forceNoAnimation)
         {
-            if (targetStateData == null)
-            {
-                return;
-            }
+            List<string> propertyNameList = targetData.PropertyNameList;
+            List<UIControllerProperty> propertyList = targetStateData.PropertyList;
+            RectTransform rectTransform = targetData.RectTransform;
 
-            if (targetStateData.PropertyDict.Count == 0)
+            for (int propertyIndex = 0; propertyIndex < propertyNameList.Count; propertyIndex++)
             {
-                return;
-            }
+                string propertyName = propertyNameList[propertyIndex];
+                if (string.IsNullOrWhiteSpace(propertyName))
+                {
+                    continue;
+                }
 
-            if (string.IsNullOrWhiteSpace(targetStateData.Name))
-            {
-                return;
-            }
+                if (propertyIndex >= propertyList.Count)
+                {
+                    throw new Exception($"controller {controllerData.Name} target index {targetIndex} is missing property state index {propertyIndex} on panel {name}");
+                }
 
-            RectTransform rectTransform = GetControllerTargetRectTransform(targetStateData.Name);
-            foreach (UIControllerProperty property in targetStateData.PropertyDict.Values)
-            {
-                ApplyProperty(property, rectTransform, forceNoAnimation);
+                UIControllerProperty property = propertyList[propertyIndex];
+                if (property == null)
+                {
+                    continue;
+                }
+
+                if (property.Name != propertyName)
+                {
+                    throw new Exception($"controller {controllerData.Name} target index {targetIndex} property index {propertyIndex} expected {propertyName}, got {property.Name} on panel {name}");
+                }
+
+                ApplyProperty(property, propertyName, rectTransform, forceNoAnimation);
             }
         }
 
-        private RectTransform GetControllerTargetRectTransform(string targetName)
-        {
-            if (_controllerTargetDict.TryGetValue(targetName, out RectTransform rectTransform))
-            {
-                return rectTransform;
-            }
-
-            throw new Exception($"can't find controller target binding {targetName} on panel {name}");
-        }
-
-        private void ApplyProperty(UIControllerProperty property, RectTransform rectTransform, bool forceNoAnimation)
+        private void ApplyProperty(UIControllerProperty property, string propertyName, RectTransform rectTransform, bool forceNoAnimation)
         {
             if (property.CanAnimate == false || property.NeedAnimate == false || forceNoAnimation || property.AnimationDuration <= 0f)
             {
@@ -337,7 +354,7 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            RegisterTween(rectTransform, property.Name, tween);
+            RegisterTween(rectTransform, propertyName, tween);
         }
 
         private Tween CreateFloatTween(UIControllerProperty<float> property, RectTransform rectTransform)
@@ -428,6 +445,305 @@ namespace Windsmoon.UIController
             }
 #endif
         }
+
+#if UNITY_EDITOR
+        private bool ControllerNeedsLegacyMigration(UIControllerData controllerData)
+        {
+            if (controllerData == null || controllerData.TargetList.Count > 0)
+            {
+                return false;
+            }
+
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                if (stateList[stateIndex] != null && stateList[stateIndex].TargetStateList.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+#pragma warning disable CS0618
+        private Dictionary<string, RectTransform> BuildLegacyTargetBindingDict(List<string> warningList)
+        {
+            Dictionary<string, RectTransform> bindingDict = new Dictionary<string, RectTransform>();
+            List<UIControllerTargetBinding> bindingList = LegacyControllerTargetBindingList;
+            for (int i = 0; i < bindingList.Count; i++)
+            {
+                UIControllerTargetBinding binding = bindingList[i];
+                if (string.IsNullOrWhiteSpace(binding.Name))
+                {
+                    warningList.Add($"Legacy target binding {i} has no name.");
+                    continue;
+                }
+
+                if (bindingDict.ContainsKey(binding.Name))
+                {
+                    warningList.Add($"Legacy target binding name {binding.Name} duplicated. The first binding was kept.");
+                    continue;
+                }
+
+                if (binding.RectTransform == null)
+                {
+                    warningList.Add($"Legacy target binding {binding.Name} has no RectTransform.");
+                }
+
+                bindingDict.Add(binding.Name, binding.RectTransform);
+            }
+
+            return bindingDict;
+        }
+#pragma warning restore CS0618
+
+        private void MigrateLegacyController(UIControllerData controllerData, int controllerIndex, Dictionary<string, RectTransform> legacyTargetBindingDict, List<string> warningList)
+        {
+            string controllerLabel = GetControllerMigrationLabel(controllerData, controllerIndex);
+            List<string> legacyTargetNameList = CollectLegacyTargetNames(controllerData, controllerLabel, warningList);
+            List<UIControllerTargetData> targetList = controllerData.TargetList;
+            targetList.Clear();
+
+            for (int targetIndex = 0; targetIndex < legacyTargetNameList.Count; targetIndex++)
+            {
+                string targetName = legacyTargetNameList[targetIndex];
+                UIControllerTargetData targetData = new UIControllerTargetData
+                {
+                    Name = targetName
+                };
+
+                if (legacyTargetBindingDict.TryGetValue(targetName, out RectTransform rectTransform))
+                {
+                    targetData.RectTransform = rectTransform;
+                }
+                else
+                {
+                    warningList.Add($"{controllerLabel}: legacy target {targetName} has no RectTransform binding.");
+                }
+
+                CollectLegacyPropertyNames(controllerData, controllerLabel, targetName, targetData.PropertyNameList, warningList);
+                targetList.Add(targetData);
+            }
+
+            RebuildLegacyStateData(controllerData, controllerLabel, targetList, warningList);
+        }
+
+        private List<string> CollectLegacyTargetNames(UIControllerData controllerData, string controllerLabel, List<string> warningList)
+        {
+            List<string> targetNameList = new List<string>();
+            HashSet<string> targetNameSet = new HashSet<string>();
+            List<UIControllerStateData> stateList = controllerData.StateList;
+
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                if (stateData == null)
+                {
+                    warningList.Add($"{controllerLabel} state {stateIndex}: state data is null.");
+                    continue;
+                }
+
+                HashSet<string> stateTargetNameSet = new HashSet<string>();
+                List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+                for (int targetStateIndex = 0; targetStateIndex < targetStateList.Count; targetStateIndex++)
+                {
+                    UIControllerTargetStateData targetStateData = targetStateList[targetStateIndex];
+                    if (targetStateData == null)
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex}: target state {targetStateIndex} is null.");
+                        continue;
+                    }
+
+                    string targetName = targetStateData.Name;
+                    if (string.IsNullOrWhiteSpace(targetName))
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex}: target state {targetStateIndex} has no target name.");
+                        continue;
+                    }
+
+                    if (stateTargetNameSet.Add(targetName) == false)
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex}: target {targetName} duplicated. The first target was kept.");
+                        continue;
+                    }
+
+                    if (targetNameSet.Add(targetName))
+                    {
+                        targetNameList.Add(targetName);
+                    }
+                }
+            }
+
+            return targetNameList;
+        }
+
+        private void CollectLegacyPropertyNames(UIControllerData controllerData, string controllerLabel, string targetName, List<string> propertyNameList, List<string> warningList)
+        {
+            HashSet<string> propertyNameSet = new HashSet<string>();
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                UIControllerTargetStateData targetStateData = stateData == null ? null : FindFirstLegacyTargetState(stateData.TargetStateList, targetName);
+                if (targetStateData == null)
+                {
+                    continue;
+                }
+
+                HashSet<string> statePropertyNameSet = new HashSet<string>();
+                List<UIControllerProperty> propertyList = targetStateData.PropertyList;
+                for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
+                {
+                    UIControllerProperty property = propertyList[propertyIndex];
+                    if (property == null)
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex} target {targetName}: property {propertyIndex} is missing or has an unsupported SerializeReference type.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(property.Name))
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex} target {targetName}: property {propertyIndex} has no name.");
+                        continue;
+                    }
+
+                    if (statePropertyNameSet.Add(property.Name) == false)
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex} target {targetName}: property {property.Name} duplicated. The first property was kept.");
+                        continue;
+                    }
+
+                    if (propertyNameSet.Add(property.Name))
+                    {
+                        propertyNameList.Add(property.Name);
+                    }
+                }
+            }
+        }
+
+        private void RebuildLegacyStateData(UIControllerData controllerData, string controllerLabel, List<UIControllerTargetData> targetList, List<string> warningList)
+        {
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            List<List<UIControllerTargetStateData>> legacyTargetStateLists = new List<List<UIControllerTargetStateData>>(stateList.Count);
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                legacyTargetStateLists.Add(stateData == null ? new List<UIControllerTargetStateData>() : new List<UIControllerTargetStateData>(stateData.TargetStateList));
+            }
+
+            for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
+            {
+                UIControllerStateData stateData = stateList[stateIndex];
+                if (stateData == null)
+                {
+                    stateData = new UIControllerStateData();
+                    stateList[stateIndex] = stateData;
+                }
+
+                List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+                targetStateList.Clear();
+
+                for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
+                {
+                    UIControllerTargetData targetData = targetList[targetIndex];
+                    string targetName = targetData.Name;
+                    UIControllerTargetStateData legacyTargetStateData = FindFirstLegacyTargetState(legacyTargetStateLists[stateIndex], targetName);
+                    if (legacyTargetStateData == null && targetData.PropertyNameList.Count > 0)
+                    {
+                        warningList.Add($"{controllerLabel} state {stateIndex}: target {targetName} was missing. Default property data was created.");
+                    }
+
+                    Dictionary<string, UIControllerProperty> legacyPropertyDict = BuildLegacyPropertyDict(legacyTargetStateData);
+                    UIControllerTargetStateData newTargetStateData = new UIControllerTargetStateData();
+                    List<UIControllerProperty> newPropertyList = newTargetStateData.PropertyList;
+
+                    for (int propertyIndex = 0; propertyIndex < targetData.PropertyNameList.Count; propertyIndex++)
+                    {
+                        string propertyName = targetData.PropertyNameList[propertyIndex];
+                        if (legacyPropertyDict != null && legacyPropertyDict.TryGetValue(propertyName, out UIControllerProperty legacyProperty))
+                        {
+                            newPropertyList.Add(legacyProperty);
+                            continue;
+                        }
+
+                        warningList.Add($"{controllerLabel} state {stateIndex} target {targetName}: property {propertyName} was missing. Default data was created.");
+                        newPropertyList.Add(CreateDefaultProperty(propertyName, targetData.RectTransform, $"{controllerLabel} state {stateIndex} target {targetName}", warningList));
+                    }
+
+                    targetStateList.Add(newTargetStateData);
+                }
+            }
+        }
+
+        private static UIControllerTargetStateData FindFirstLegacyTargetState(List<UIControllerTargetStateData> targetStateList, string targetName)
+        {
+            for (int i = 0; i < targetStateList.Count; i++)
+            {
+                UIControllerTargetStateData targetStateData = targetStateList[i];
+                if (targetStateData != null && targetStateData.Name == targetName)
+                {
+                    return targetStateData;
+                }
+            }
+
+            return null;
+        }
+
+        private static Dictionary<string, UIControllerProperty> BuildLegacyPropertyDict(UIControllerTargetStateData targetStateData)
+        {
+            if (targetStateData == null)
+            {
+                return null;
+            }
+
+            Dictionary<string, UIControllerProperty> propertyDict = new Dictionary<string, UIControllerProperty>();
+            List<UIControllerProperty> propertyList = targetStateData.PropertyList;
+            for (int i = 0; i < propertyList.Count; i++)
+            {
+                UIControllerProperty property = propertyList[i];
+                if (property == null || string.IsNullOrWhiteSpace(property.Name) || propertyDict.ContainsKey(property.Name))
+                {
+                    continue;
+                }
+
+                propertyDict.Add(property.Name, property);
+            }
+
+            return propertyDict;
+        }
+
+        private static UIControllerProperty CreateDefaultProperty(string propertyName, RectTransform rectTransform, string context, List<string> warningList)
+        {
+            UIControllerProperty property = UIControllerPropertyFactory.Create(propertyName);
+            if (property == null)
+            {
+                warningList.Add($"{context}: could not create default property {propertyName}.");
+                return null;
+            }
+
+            CapturePropertyIfValid(property, rectTransform);
+            return property;
+        }
+
+        private static void CapturePropertyIfValid(UIControllerProperty property, RectTransform rectTransform)
+        {
+            if (property == null || rectTransform == null)
+            {
+                return;
+            }
+
+            if (property.IsValid(rectTransform, out _))
+            {
+                property.Capture(rectTransform);
+            }
+        }
+
+        private static string GetControllerMigrationLabel(UIControllerData controllerData, int controllerIndex)
+        {
+            return string.IsNullOrWhiteSpace(controllerData.Name) ? $"controller {controllerIndex}" : $"controller {controllerData.Name}";
+        }
+#endif
         #endregion
     }
 }
