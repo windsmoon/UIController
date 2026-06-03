@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.0
+
+### English
+
+- Changed the serialized data layout so each controller owns its target list and controlled property names, while each state stores values by matching target and property order.
+- Added `UIControllerTargetData` and data version tracking for the new controller target structure.
+- Kept legacy target binding, state index, and target name data under editor-only legacy fields for manual migration.
+- Updated runtime state application to use controller target and property indexes instead of legacy target-name dictionaries.
+- Reworked the UIController Inspector and panel editor window around controller-level targets, property lists, synchronized state data, capture, preview, and target/property editing.
+- Added single-panel and selected-folder prefab migration tools for upgrading legacy state-level target/property data to the new controller target structure.
+- Added migration warnings, prefab modification recording, scene dirty handling, and README documentation for the v0.4.0 data migration workflow.
+- Added a release zip creation tool that can package UIController with or without bundled DOTween.
+- Updated the demo scene, sample hover controller wiring, screenshots, and WebGL release build for the new data structure.
+- Updated the GitHub Pages deployment workflow to support Brotli-compressed Unity WebGL build outputs by preparing decompressed Pages artifacts before upload.
+- Updated `.gitignore` to ignore local Codex agent instruction files.
+
+### 中文
+
+- 调整序列化数据结构：每个 controller 自己保存 target 列表和受控 property 名称，每个 state 按对应的 target/property 顺序保存状态值。
+- 新增 `UIControllerTargetData` 和数据版本记录，用于新的 controller target 结构。
+- 将旧版 target binding、state index、target name 数据保留为 editor-only 旧字段，仅用于手动迁移。
+- 运行时状态应用改为按 controller target/property 索引匹配数据，不再依赖旧版 target 名称字典。
+- 重做 UIController Inspector 和面板编辑窗口，围绕 controller 级 target、property 列表、状态同步、捕获、预览和 target/property 编辑工作流组织。
+- 新增单个 panel 和选中文件夹 prefab 的旧数据迁移工具，可把旧版 state-level target/property 数据升级到新的 controller target 结构。
+- 新增迁移警告、prefab 修改记录、scene dirty 标记，并在 README 中补充 v0.4.0 数据迁移说明。
+- 新增 release zip 创建工具，可分别打包带 DOTween 和不带 DOTween 的 UIController 包。
+- 更新演示场景、示例 hover controller 绑定、截图和 WebGL Release 构建，以适配新的数据结构。
+- 更新 GitHub Pages 部署工作流，支持 Brotli 压缩的 Unity WebGL 构建产物，并在上传前准备解压后的 Pages artifact。
+- 更新 `.gitignore`，忽略本地 Codex agent 指令文件。
+
 ## 0.3.0
 
 ### English

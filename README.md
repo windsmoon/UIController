@@ -57,7 +57,7 @@ UIController 是一个用于 Unity UI 状态控制的 Package，适合构建可�
 
 ### Migration From Older Versions
 
-This migration upgrades data from versions earlier than v0.5.0 to v0.5.0. v0.5.0 changes the serialized data layout: older versions stored target and property data under each state, while v0.5.0 defines targets and controlled property names once under each controller. Every state now only stores the values for those target/property slots.
+This migration upgrades data from versions earlier than v0.4.0 to v0.4.0. v0.4.0 changes the serialized data layout: older versions stored target and property data under each state, while v0.4.0 defines targets and controlled property names once under each controller. Every state now only stores the values for those target/property slots.
 
 Before migration, commit or back up your project data. After migration, check the Console warnings and verify the referenced prefabs, controllers, states, targets, and properties.
 
@@ -389,7 +389,7 @@ MIT. See [LICENSE](LICENSE).
 
 ### 从旧版本迁移数据
 
-这里的迁移指从 v0.5.0 以下版本迁移到 v0.5.0。v0.5.0 调整了序列化结构：旧版本把 target 和 property 数据存放在每个 state 下面；v0.5.0 把 target 和 property 名称提升到 controller 下面统一定义，每个 state 只保存对应 target/property 槽位的状态值。
+这里的迁移指从 v0.4.0 以下版本迁移到 v0.4.0。v0.4.0 调整了序列化结构：旧版本把 target 和 property 数据存放在每个 state 下面；v0.4.0 把 target 和 property 名称提升到 controller 下面统一定义，每个 state 只保存对应 target/property 槽位的状态值。
 
 迁移前建议先提交或备份项目数据。迁移完成后，如果 Console 出现 warning，需要逐条检查对应 prefab、controller、state、target 或 property 是否符合预期。
 
