@@ -34,3 +34,7 @@ UnityProject~/[Rr]ecordings/
 *.unitypackage
 *.unitypackage.meta
 *.app
+
+# Local Codex agent instructions.
+AGENTS.md
+AGENTS.md.meta
