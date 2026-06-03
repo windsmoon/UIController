@@ -15,9 +15,6 @@ public class SampleTest : MonoBehaviour
     #region fields
     [SerializeField]
     private UIControllerPanel _starsControllerPanel;
-    [SerializeField]
-    private UIControllerPanel _infoControllerPanel;
-    
     
     [SerializeField]
     private Button _starLevel1Button;
@@ -37,6 +34,8 @@ public class SampleTest : MonoBehaviour
     
     [SerializeField]
     private Image _hoverImage;
+    [SerializeField]
+    private UIControllerPanel _hoverImagePanel;
 
     private EventTrigger _hoverImageEventTrigger;
     private EventTrigger.Entry _hoverImagePointerEnterEntry;
@@ -163,12 +162,12 @@ public class SampleTest : MonoBehaviour
 
     private void OnHoverImagePointerEnterEvent(BaseEventData eventData)
     {
-        _infoControllerPanel.SetControllerState(HoverControlerName, 1);
+        _hoverImagePanel.SetControllerState(HoverControlerName, 1);
     }
 
     private void OnHoverImagePointerExitEvent(BaseEventData eventData)
     {
-        _infoControllerPanel.SetControllerState(HoverControlerName, 0);
+        _hoverImagePanel.SetControllerState(HoverControlerName, 0);
     }
 
     private static void AddButtonListener(Button button, UnityAction action)
