@@ -2496,6 +2496,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3dce119ccaac9e4e9d024356ad70b24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Windsmoon.UIController.Runtime::Framework.UI.Controller.UIControllerPanel
+  _dataVersion: 1
   _controllerTargetBindingList:
   - Name: Strar1
     RectTransform: {fileID: 1669543938}
@@ -2509,87 +2510,109 @@ MonoBehaviour:
     RectTransform: {fileID: 1649184948}
   _controllerList:
   - _name: Level
+    _targetList:
+    - _name: Strar1
+      _rectTransform: {fileID: 1669543938}
+      _propertyNameList:
+      - Active
+    - _name: Strar2
+      _rectTransform: {fileID: 179359960}
+      _propertyNameList:
+      - Active
+    - _name: Strar3
+      _rectTransform: {fileID: 476456742}
+      _propertyNameList:
+      - Active
+    - _name: Strar4
+      _rectTransform: {fileID: 2082449961}
+      _propertyNameList:
+      - Active
     _stateList:
-    - _index: 0
+    - _comment: level 1
+      _index: 0
       _targetStateList:
-      - _name: Strar1
+      - _name: 
         _propertyList:
         - rid: 1165357574679167096
-      - _name: Strar2
+      - _name: 
         _propertyList:
         - rid: 1165357574679167097
-      - _name: Strar3
+      - _name: 
         _propertyList:
         - rid: 1165357574679167098
-      - _name: Strar4
+      - _name: 
         _propertyList:
         - rid: 1165357574679167099
-      _comment: level 1
-    - _index: 1
+    - _comment: level 2
+      _index: 1
       _targetStateList:
-      - _name: Strar1
+      - _name: 
         _propertyList:
         - rid: 1165357574679167103
-      - _name: Strar2
+      - _name: 
         _propertyList:
         - rid: 1165357574679167102
-      - _name: Strar3
+      - _name: 
         _propertyList:
         - rid: 1165357574679167101
-      - _name: Strar4
+      - _name: 
         _propertyList:
         - rid: 1165357574679167100
-      _comment: level 2
-    - _index: 2
+    - _comment: level 3
+      _index: 2
       _targetStateList:
-      - _name: Strar1
+      - _name: 
         _propertyList:
         - rid: 1165357574679167104
-      - _name: Strar2
+      - _name: 
         _propertyList:
         - rid: 1165357574679167105
-      - _name: Strar3
+      - _name: 
         _propertyList:
         - rid: 1165357574679167106
-      - _name: Strar4
+      - _name: 
         _propertyList:
         - rid: 1165357574679167107
-      _comment: level 3
-    - _index: 3
+    - _comment: level 4
+      _index: 3
       _targetStateList:
-      - _name: Strar1
+      - _name: 
         _propertyList:
         - rid: 1165357574679167108
-      - _name: Strar2
+      - _name: 
         _propertyList:
         - rid: 1165357574679167109
-      - _name: Strar3
+      - _name: 
         _propertyList:
         - rid: 1165357574679167110
-      - _name: Strar4
+      - _name: 
         _propertyList:
         - rid: 1165357574679167111
-      _comment: level 4
   - _name: Pos
+    _targetList:
+    - _name: StarsPanel
+      _rectTransform: {fileID: 1649184948}
+      _propertyNameList:
+      - AnchoredPosition
     _stateList:
-    - _index: 0
+    - _comment: up
+      _index: 0
       _targetStateList:
-      - _name: StarsPanel
+      - _name: 
         _propertyList:
         - rid: 1165357574679167115
-      _comment: up
-    - _index: 1
+    - _comment: middle
+      _index: 1
       _targetStateList:
-      - _name: StarsPanel
+      - _name: 
         _propertyList:
         - rid: 1165357574679167116
-      _comment: middle
-    - _index: 2
+    - _comment: down
+      _index: 2
       _targetStateList:
-      - _name: StarsPanel
+      - _name: 
         _propertyList:
         - rid: 1165357574679167117
-      _comment: down
   references:
     version: 2
     RefIds:
@@ -2597,96 +2620,134 @@ MonoBehaviour:
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167097
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167098
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167099
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167100
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167101
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167102
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167103
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167104
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167105
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167106
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167107
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 0
     - rid: 1165357574679167108
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167109
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167110
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167111
       type: {class: UIControllerActiveProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 0
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: 1
     - rid: 1165357574679167115
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 0, y: 223}
     - rid: 1165357574679167116
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 0, y: 32.999992}
     - rid: 1165357574679167117
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 0, y: -129}
 --- !u!1 &1659549852
 GameObject:
@@ -3348,6 +3409,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3dce119ccaac9e4e9d024356ad70b24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Windsmoon.UIController.Runtime::Framework.UI.Controller.UIControllerPanel
+  _dataVersion: 1
   _controllerTargetBindingList:
   - Name: Image
     RectTransform: {fileID: 1659549853}
@@ -3355,25 +3417,34 @@ MonoBehaviour:
     RectTransform: {fileID: 220972928}
   _controllerList:
   - _name: Hover
+    _targetList:
+    - _name: Image
+      _rectTransform: {fileID: 1659549853}
+      _propertyNameList:
+      - AnchoredPosition
+    - _name: HoverTip
+      _rectTransform: {fileID: 220972928}
+      _propertyNameList:
+      - AnchoredPosition
     _stateList:
-    - _index: 0
+    - _comment: 's '
+      _index: 0
       _targetStateList:
-      - _name: Image
+      - _name: 
         _propertyList:
         - rid: 1165357574679167119
-      - _name: HoverTip
+      - _name: 
         _propertyList:
         - rid: 1165357574679167121
-      _comment: 's '
-    - _index: 1
+    - _comment: hoverd
+      _index: 1
       _targetStateList:
-      - _name: Image
+      - _name: 
         _propertyList:
         - rid: 1165357574679167123
-      - _name: HoverTip
+      - _name: 
         _propertyList:
         - rid: 1165357574679167125
-      _comment: hoverd
   references:
     version: 2
     RefIds:
@@ -3381,21 +3452,29 @@ MonoBehaviour:
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 50, y: 0}
     - rid: 1165357574679167121
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 150, y: 0}
     - rid: 1165357574679167123
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 150, y: 0}
     - rid: 1165357574679167125
       type: {class: UIControllerAnchoredPositionProperty, ns: Windsmoon.UIController.Properties, asm: Windsmoon.UIController.Runtime}
       data:
         _needAnimation: 1
+        _animationEase: 9
+        _animationDuration: 0.25
         _value: {x: 250, y: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

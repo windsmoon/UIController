@@ -8,24 +8,26 @@ namespace Windsmoon.UIController
     public class UIControllerStateData
     {
         #region fields
-        [SerializeField]
-        private int _index;
-        [SerializeField]
-        private List<UIControllerTargetStateData> _targetStateList = new List<UIControllerTargetStateData>();
 #if UNITY_EDITOR
         [SerializeField]
         private string _comment;
+        [SerializeField, Obsolete("Legacy state index for old serialized data only.")]
+        private int _index;
 #endif
-
-        private Dictionary<string, UIControllerTargetStateData> _targetStateDict;
+        [SerializeField]
+        private List<UIControllerTargetStateData> _targetStateList = new List<UIControllerTargetStateData>();
         #endregion
 
         #region properties
+#if UNITY_EDITOR
+#pragma warning disable CS0618
         public int Index
         {
             get => _index;
             set => _index = value;
         }
+#pragma warning restore CS0618
+#endif
 
         public List<UIControllerTargetStateData> TargetStateList => _targetStateList;
 #if UNITY_EDITOR
@@ -35,57 +37,14 @@ namespace Windsmoon.UIController
             set => _comment = value;
         }
 #endif
-        public IReadOnlyDictionary<string, UIControllerTargetStateData> TargetStateDict
-        {
-            get
-            {
-                EnsureTargetStateDict();
-                return _targetStateDict;
-            }
-        }
         #endregion
 
         #region methods
         public void RebuildCache()
         {
-            EnsureTargetStateList();
-            _targetStateDict = new Dictionary<string, UIControllerTargetStateData>(_targetStateList.Count);
-
             for (int i = 0; i < _targetStateList.Count; i++)
             {
-                UIControllerTargetStateData targetStateData = _targetStateList[i];
-                if (targetStateData == null)
-                {
-                    continue;
-                }
-
-                targetStateData.RebuildCache();
-                if (string.IsNullOrWhiteSpace(targetStateData.Name) || _targetStateDict.ContainsKey(targetStateData.Name))
-                {
-                    continue;
-                }
-
-                _targetStateDict.Add(targetStateData.Name, targetStateData);
-            }
-        }
-        #endregion
-
-        #region private methods
-        private void EnsureTargetStateDict()
-        {
-            if (_targetStateDict != null)
-            {
-                return;
-            }
-
-            RebuildCache();
-        }
-
-        private void EnsureTargetStateList()
-        {
-            if (_targetStateList == null)
-            {
-                _targetStateList = new List<UIControllerTargetStateData>();
+                _targetStateList[i]?.RebuildCache();
             }
         }
         #endregion

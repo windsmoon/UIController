@@ -11,11 +11,14 @@ namespace Windsmoon.UIController
         [SerializeField]
         private string _name;
         [SerializeField]
+        private List<UIControllerTargetData> _targetList = new List<UIControllerTargetData>();
+        [SerializeField]
         private List<UIControllerStateData> _stateList = new List<UIControllerStateData>();
         #endregion
 
         #region properties
         public string Name => _name;
+        public List<UIControllerTargetData> TargetList => _targetList;
         public List<UIControllerStateData> StateList => _stateList;
         #endregion
     }

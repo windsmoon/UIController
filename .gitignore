@@ -12,6 +12,8 @@ UnityProject~/[Rr]ecordings/
 # IDE and Unity generated project files.
 .vs/
 .idea/
+AGENTS.md
+AGENTS.md.meta
 *.csproj
 *.sln
 *.slnx
