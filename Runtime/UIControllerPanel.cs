@@ -139,6 +139,36 @@ namespace Windsmoon.UIController
             return controllerData.StateList.Count;
         }
 
+        public float GetStateAnimationDuration(string controllerName, int stateIndex)
+        {
+            if (HasControllerState(controllerName, stateIndex) == false)
+            {
+                return 0f;
+            }
+
+            UIControllerData controllerData = _controllerDict[controllerName];
+            UIControllerStateData stateData = controllerData.StateList[stateIndex];
+            float maxDuration = 0f;
+            List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
+            for (int targetIndex = 0; targetIndex < targetStateList.Count; targetIndex++)
+            {
+                UIControllerTargetStateData targetStateData = targetStateList[targetIndex];
+                List<UIControllerProperty> propertyList = targetStateData.PropertyList;
+                for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
+                {
+                    UIControllerProperty property = propertyList[propertyIndex];
+                    if (property == null || property.CanAnimate == false || property.NeedAnimate == false || property.AnimationDuration <= 0f)
+                    {
+                        continue;
+                    }
+
+                    maxDuration = Mathf.Max(maxDuration, property.AnimationDelay + property.AnimationDuration);
+                }
+            }
+
+            return maxDuration;
+        }
+
 #if UNITY_EDITOR
         public bool NeedsLegacyMigration()
         {
