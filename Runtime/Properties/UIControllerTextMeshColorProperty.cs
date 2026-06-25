@@ -44,11 +44,6 @@ namespace Windsmoon.UIController.Properties
             return textMesh != null ? textMesh.color : _value;
         }
 
-        public override Color GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, Color value)
         {
             TextMeshProUGUI textMesh = GetTextMesh(rectTransform);
@@ -56,11 +51,6 @@ namespace Windsmoon.UIController.Properties
             {
                 textMesh.color = value;
             }
-        }
-
-        public override string GetValueText()
-        {
-            return _value.ToString();
         }
 
         private static TextMeshProUGUI GetTextMesh(RectTransform rectTransform)

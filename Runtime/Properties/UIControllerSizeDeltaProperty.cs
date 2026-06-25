@@ -32,19 +32,9 @@ namespace Windsmoon.UIController.Properties
             return rectTransform.sizeDelta;
         }
 
-        public override Vector2 GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, Vector2 value)
         {
             rectTransform.sizeDelta = value;
-        }
-
-        public override string GetValueText()
-        {
-            return _value.ToString();
         }
         #endregion
     }

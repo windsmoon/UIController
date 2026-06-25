@@ -43,11 +43,6 @@ namespace Windsmoon.UIController.Properties
             return canvasGroup != null ? canvasGroup.alpha : _value;
         }
 
-        public override float GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, float value)
         {
             CanvasGroup canvasGroup = GetCanvasGroup(rectTransform);

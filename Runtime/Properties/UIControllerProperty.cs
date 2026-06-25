@@ -66,17 +66,27 @@ namespace Windsmoon.UIController.Properties
 
         #region methods
         public abstract T GetCurrentValue(RectTransform rectTransform);
-        public abstract T GetTargetValue();
         public abstract void SetCurrentValue(RectTransform rectTransform, T value);
+
+        public virtual T GetTargetValue()
+        {
+            return _value;
+        }
 
         public void SetTargetValue(T value)
         {
             _value = value;
         }
-        
+
         public sealed override void ApplyTargetValue(RectTransform rectTransform)
         {
             SetCurrentValue(rectTransform, GetTargetValue());
+        }
+
+        public override string GetValueText()
+        {
+            object value = GetTargetValue();
+            return value == null ? string.Empty : value.ToString();
         }
         #endregion
     }

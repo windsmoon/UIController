@@ -32,19 +32,9 @@ namespace Windsmoon.UIController.Properties
             return rectTransform.anchoredPosition;
         }
 
-        public override Vector2 GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, Vector2 value)
         {
             rectTransform.anchoredPosition = value;
-        }
-
-        public override string GetValueText()
-        {
-            return _value.ToString();
         }
         #endregion
     }

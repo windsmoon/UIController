@@ -44,11 +44,6 @@ namespace Windsmoon.UIController.Properties
             return image != null ? image.color : _value;
         }
 
-        public override Color GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, Color value)
         {
             Image image = GetImage(rectTransform);
@@ -56,11 +51,6 @@ namespace Windsmoon.UIController.Properties
             {
                 image.color = value;
             }
-        }
-
-        public override string GetValueText()
-        {
-            return _value.ToString();
         }
 
         private static Image GetImage(RectTransform rectTransform)

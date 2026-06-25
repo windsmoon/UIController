@@ -31,19 +31,9 @@ namespace Windsmoon.UIController.Properties
             return rectTransform.gameObject.activeSelf;
         }
 
-        public override bool GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, bool value)
         {
             rectTransform.gameObject.SetActive(value);
-        }
-
-        public override string GetValueText()
-        {
-            return _value ? "True" : "False";
         }
         #endregion
     }
