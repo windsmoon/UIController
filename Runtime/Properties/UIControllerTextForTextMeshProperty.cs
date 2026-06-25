@@ -52,11 +52,6 @@ namespace Windsmoon.UIController.Properties
             }
         }
 
-        public override string GetValueText()
-        {
-            return _value ?? string.Empty;
-        }
-
         private static TextMeshProUGUI GetTextMesh(RectTransform rectTransform)
         {
             return rectTransform.GetComponent<TextMeshProUGUI>();

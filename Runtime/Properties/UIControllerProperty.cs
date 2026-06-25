@@ -11,6 +11,7 @@ namespace Windsmoon.UIController.Properties
         public const float DefaultAnimationDuration = 0.25f;
         public const Ease DefaultAnimationEase = Ease.OutCubic;
         private const float MinAnimationDuration = 0f;
+        private const float MinAnimationDelay = 0f;
 
         [SerializeField]
         private bool _needAnimation;
@@ -18,6 +19,8 @@ namespace Windsmoon.UIController.Properties
         private Ease _animationEase = DefaultAnimationEase;
         [SerializeField]
         private float _animationDuration = DefaultAnimationDuration;
+        [SerializeField]
+        private float _animationDelay;
         #endregion
 
         #region properties
@@ -38,12 +41,18 @@ namespace Windsmoon.UIController.Properties
             get => Mathf.Max(MinAnimationDuration, _animationDuration);
             set => _animationDuration = Mathf.Max(MinAnimationDuration, value);
         }
+        public float AnimationDelay
+        {
+            get => Mathf.Max(MinAnimationDelay, _animationDelay);
+            set => _animationDelay = Mathf.Max(MinAnimationDelay, value);
+        }
         #endregion
 
         #region methods
         public abstract bool IsValid(RectTransform rectTransform, out string errorMessage);
         public abstract void Capture(RectTransform rectTransform);
         public abstract void ApplyTargetValue(RectTransform rectTransform);
+        [Obsolete("GetValueText is obsolete.")]
         public abstract string GetValueText();
         #endregion
     }
@@ -58,17 +67,28 @@ namespace Windsmoon.UIController.Properties
 
         #region methods
         public abstract T GetCurrentValue(RectTransform rectTransform);
-        public abstract T GetTargetValue();
         public abstract void SetCurrentValue(RectTransform rectTransform, T value);
+
+        public virtual T GetTargetValue()
+        {
+            return _value;
+        }
 
         public void SetTargetValue(T value)
         {
             _value = value;
         }
-        
+
         public sealed override void ApplyTargetValue(RectTransform rectTransform)
         {
             SetCurrentValue(rectTransform, GetTargetValue());
+        }
+
+        [Obsolete("GetValueText is obsolete.")]
+        public override string GetValueText()
+        {
+            object value = GetTargetValue();
+            return value == null ? string.Empty : value.ToString();
         }
         #endregion
     }

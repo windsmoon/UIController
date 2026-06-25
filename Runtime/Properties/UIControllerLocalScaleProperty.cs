@@ -32,19 +32,9 @@ namespace Windsmoon.UIController.Properties
             return rectTransform.localScale;
         }
 
-        public override Vector3 GetTargetValue()
-        {
-            return _value;
-        }
-
         public override void SetCurrentValue(RectTransform rectTransform, Vector3 value)
         {
             rectTransform.localScale = value;
-        }
-
-        public override string GetValueText()
-        {
-            return _value.ToString();
         }
         #endregion
     }
