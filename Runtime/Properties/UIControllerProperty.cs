@@ -11,6 +11,7 @@ namespace Windsmoon.UIController.Properties
         public const float DefaultAnimationDuration = 0.25f;
         public const Ease DefaultAnimationEase = Ease.OutCubic;
         private const float MinAnimationDuration = 0f;
+        private const float MinAnimationDelay = 0f;
 
         [SerializeField]
         private bool _needAnimation;
@@ -18,6 +19,8 @@ namespace Windsmoon.UIController.Properties
         private Ease _animationEase = DefaultAnimationEase;
         [SerializeField]
         private float _animationDuration = DefaultAnimationDuration;
+        [SerializeField]
+        private float _animationDelay;
         #endregion
 
         #region properties
@@ -37,6 +40,11 @@ namespace Windsmoon.UIController.Properties
         {
             get => Mathf.Max(MinAnimationDuration, _animationDuration);
             set => _animationDuration = Mathf.Max(MinAnimationDuration, value);
+        }
+        public float AnimationDelay
+        {
+            get => Mathf.Max(MinAnimationDelay, _animationDelay);
+            set => _animationDelay = Mathf.Max(MinAnimationDelay, value);
         }
         #endregion
 

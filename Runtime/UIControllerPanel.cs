@@ -361,44 +361,68 @@ namespace Windsmoon.UIController
         {
             float animatedValue = property.GetCurrentValue(rectTransform);
             float targetValue = property.GetTargetValue();
-            return DOTween.To(() => animatedValue, value =>
+            Tween tween = DOTween.To(() => animatedValue, value =>
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
             }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+
+            return tween;
         }
 
         private Tween CreateVector2Tween(UIControllerProperty<Vector2> property, RectTransform rectTransform)
         {
             Vector2 animatedValue = property.GetCurrentValue(rectTransform);
             Vector2 targetValue = property.GetTargetValue();
-            return DOTween.To(() => animatedValue, value =>
+            Tween tween = DOTween.To(() => animatedValue, value =>
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
             }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+
+            return tween;
         }
 
         private Tween CreateVector3Tween(UIControllerProperty<Vector3> property, RectTransform rectTransform)
         {
             Vector3 animatedValue = property.GetCurrentValue(rectTransform);
             Vector3 targetValue = property.GetTargetValue();
-            return DOTween.To(() => animatedValue, value =>
+            Tween tween = DOTween.To(() => animatedValue, value =>
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
             }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+
+            return tween;
         }
 
         private Tween CreateColorTween(UIControllerProperty<Color> property, RectTransform rectTransform)
         {
             Color animatedValue = property.GetCurrentValue(rectTransform);
             Color targetValue = property.GetTargetValue();
-            return DOTween.To(() => animatedValue, value =>
+            Tween tween = DOTween.To(() => animatedValue, value =>
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
             }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+
+            return tween;
         }
 
         private void RegisterTween(RectTransform rectTransform, string propertyName, Tween tween)

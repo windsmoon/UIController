@@ -820,11 +820,15 @@ namespace Windsmoon.UIController.Editor
 
             Ease animationEase = property.AnimationEase;
             float animationDuration = property.AnimationDuration;
+            float animationDelay = property.AnimationDelay;
             EditorGUI.BeginChangeCheck();
             GUILayout.Label("Ease", GUILayout.Width(34f));
             Ease newAnimationEase = (Ease)EditorGUILayout.EnumPopup(animationEase, GUILayout.Width(150f));
             GUILayout.Label("Duration", GUILayout.Width(58f));
             float newAnimationDuration = EditorGUILayout.FloatField(animationDuration, GUILayout.Width(64f));
+            GUILayout.Label("s", GUILayout.Width(12f));
+            GUILayout.Label("Delay", GUILayout.Width(40f));
+            float newAnimationDelay = EditorGUILayout.FloatField(animationDelay, GUILayout.Width(64f));
             GUILayout.Label("s", GUILayout.Width(12f));
             if (EditorGUI.EndChangeCheck())
             {
@@ -832,6 +836,7 @@ namespace Windsmoon.UIController.Editor
                 {
                     property.AnimationEase = newAnimationEase;
                     property.AnimationDuration = newAnimationDuration;
+                    property.AnimationDelay = newAnimationDelay;
                 });
             }
 
