@@ -52,6 +52,7 @@ namespace Windsmoon.UIController.Properties
         public abstract bool IsValid(RectTransform rectTransform, out string errorMessage);
         public abstract void Capture(RectTransform rectTransform);
         public abstract void ApplyTargetValue(RectTransform rectTransform);
+        [Obsolete("GetValueText is obsolete.")]
         public abstract string GetValueText();
         #endregion
     }
@@ -83,6 +84,7 @@ namespace Windsmoon.UIController.Properties
             SetCurrentValue(rectTransform, GetTargetValue());
         }
 
+        [Obsolete("GetValueText is obsolete.")]
         public override string GetValueText()
         {
             object value = GetTargetValue();

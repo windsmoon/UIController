@@ -52,11 +52,6 @@ namespace Windsmoon.UIController.Properties
             }
         }
 
-        public override string GetValueText()
-        {
-            return _value.ToString("0.###");
-        }
-
         private static CanvasGroup GetCanvasGroup(RectTransform rectTransform)
         {
             return rectTransform.GetComponent<CanvasGroup>();
