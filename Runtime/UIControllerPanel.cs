@@ -346,6 +346,10 @@ namespace Windsmoon.UIController
             {
                 tween = CreateFloatTween(floatProperty, rectTransform);
             }
+            else if (property is UIControllerProperty<int> intProperty)
+            {
+                tween = CreateIntTween(intProperty, rectTransform);
+            }
             else if (property is UIControllerProperty<Vector2> vector2Property)
             {
                 tween = CreateVector2Tween(vector2Property, rectTransform);
@@ -385,6 +389,22 @@ namespace Windsmoon.UIController
             return tween;
         }
 
+        private Tween CreateIntTween(UIControllerProperty<int> property, RectTransform rectTransform)
+        {
+            int animatedValue = property.GetCurrentValue(rectTransform);
+            int targetValue = property.GetTargetValue();
+            Tween tween = DOTween.To(() => animatedValue, value =>
+            {
+                animatedValue = value;
+                property.SetCurrentValue(rectTransform, value);
+            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+
+            return tween;
+        }
         private Tween CreateVector2Tween(UIControllerProperty<Vector2> property, RectTransform rectTransform)
         {
             Vector2 animatedValue = property.GetCurrentValue(rectTransform);
