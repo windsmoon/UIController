@@ -762,6 +762,16 @@ namespace Windsmoon.UIController.Editor
                     ApplyMutation("Edit UIController Property Value", () => floatProperty.SetTargetValue(newValue));
                 }
             }
+            else if (property is UIControllerProperty<int> intProperty)
+            {
+                int intValue = intProperty.GetTargetValue();
+                EditorGUI.BeginChangeCheck();
+                int newValue = EditorGUILayout.IntField("Value", intValue, GUILayout.MinWidth(120f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    ApplyMutation("Edit UIController Property Value", () => intProperty.SetTargetValue(newValue));
+                }
+            }
             else if (property is UIControllerProperty<Vector2> vector2Property)
             {
                 Vector2 vector2Value = vector2Property.GetTargetValue();
