@@ -157,7 +157,7 @@ namespace Windsmoon.UIController
                 for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
                 {
                     UIControllerProperty property = propertyList[propertyIndex];
-                    if (property == null || property.CanAnimate == false || property.NeedAnimate == false || property.AnimationDuration <= 0f)
+                    if (property.CanAnimate == false || property.NeedAnimate == false || property.AnimationDuration <= 0f)
                     {
                         continue;
                     }
