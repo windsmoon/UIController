@@ -128,6 +128,17 @@ namespace Windsmoon.UIController
             return stateIndex < stateList.Count;
         }
 
+        public int GetStateCount(string controllerName)
+        {
+            if (HasController(controllerName) == false)
+            {
+                return 0;
+            }
+
+            UIControllerData controllerData = _controllerDict[controllerName];
+            return controllerData.StateList.Count;
+        }
+
 #if UNITY_EDITOR
         public bool NeedsLegacyMigration()
         {
