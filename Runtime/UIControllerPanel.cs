@@ -405,6 +405,7 @@ namespace Windsmoon.UIController
 
             return tween;
         }
+
         private Tween CreateVector2Tween(UIControllerProperty<Vector2> property, RectTransform rectTransform)
         {
             Vector2 animatedValue = property.GetCurrentValue(rectTransform);
