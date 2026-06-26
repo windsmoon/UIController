@@ -34,13 +34,20 @@ namespace Windsmoon.UIController
         private static readonly UIControllerPropertyDefinition[] s_definitionArray =
         {
             new UIControllerPropertyDefinition(UIControllerActiveProperty.PropertyName, () => new UIControllerActiveProperty()),
+            new UIControllerPropertyDefinition(UIControllerAnchorMinProperty.PropertyName, () => new UIControllerAnchorMinProperty()),
+            new UIControllerPropertyDefinition(UIControllerAnchorMaxProperty.PropertyName, () => new UIControllerAnchorMaxProperty()),
             new UIControllerPropertyDefinition(UIControllerAnchoredPositionProperty.PropertyName, () => new UIControllerAnchoredPositionProperty()),
             new UIControllerPropertyDefinition(UIControllerCanvasGroupAlphaProperty.PropertyName, () => new UIControllerCanvasGroupAlphaProperty()),
+            new UIControllerPropertyDefinition(UIControllerCanvasGroupInteractableProperty.PropertyName, () => new UIControllerCanvasGroupInteractableProperty()),
             new UIControllerPropertyDefinition(UIControllerImageColorProperty.PropertyName, () => new UIControllerImageColorProperty()),
+            new UIControllerPropertyDefinition(UIControllerImageFillAmountProperty.PropertyName, () => new UIControllerImageFillAmountProperty()),
+            new UIControllerPropertyDefinition(UIControllerLocalRotationProperty.PropertyName, () => new UIControllerLocalRotationProperty()),
             new UIControllerPropertyDefinition(UIControllerLocalScaleProperty.PropertyName, () => new UIControllerLocalScaleProperty()),
+            new UIControllerPropertyDefinition(UIControllerPivotProperty.PropertyName, () => new UIControllerPivotProperty()),
             new UIControllerPropertyDefinition(UIControllerSizeDeltaProperty.PropertyName, () => new UIControllerSizeDeltaProperty()),
             new UIControllerPropertyDefinition(UIControllerTextForTextMeshProperty.PropertyName, () => new UIControllerTextForTextMeshProperty()),
             new UIControllerPropertyDefinition(UIControllerTextMeshColorProperty.PropertyName, () => new UIControllerTextMeshColorProperty()),
+            new UIControllerPropertyDefinition(UIControllerTextMeshFontSizeProperty.PropertyName, () => new UIControllerTextMeshFontSizeProperty()),
         };
 
         private static readonly Dictionary<string, UIControllerPropertyDefinition> s_definitionDict = BuildDefinitionDict();
