@@ -115,6 +115,12 @@ Use this when you need to migrate every `UIControllerPanel` inside prefabs under
 
 Recommended: download the latest release package from [GitHub Releases](https://github.com/windsmoon/UIController/releases), then import it into your Unity project.
 
+You can also install the tagged package through Unity Package Manager using this Git URL:
+
+```text
+https://github.com/windsmoon/UIController.git#v0.5.0
+```
+
 DOTween note: if your project already has DOTween installed, and the release package you imported also contains DOTween, delete the duplicated DOTween folder from the imported package to avoid duplicate references or type conflicts.
 
 ### Source Code
@@ -190,6 +196,8 @@ public class Example : MonoBehaviour
 public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
 public bool HasController(string controllerName)
 public bool HasControllerState(string controllerName, int stateIndex)
+public int GetStateCount(string controllerName)
+public float GetStateAnimationDuration(string controllerName, int stateIndex)
 ```
 
 Parameters:
@@ -198,20 +206,27 @@ Parameters:
 - `stateIndex`: The zero-based state index.
 - `forceNoAnimation`: Applies values immediately when `true`.
 
-`SetControllerState` throws when controller, state, target state, property state, target `RectTransform`, or matching property index data cannot be found. Use `HasController` and `HasControllerState` when you need to check whether a controller or state exists before switching UI state.
+`SetControllerState` throws when controller, state, target state, property state, target `RectTransform`, or matching property index data cannot be found. Use `HasController` and `HasControllerState` when you need to check whether a controller or state exists before switching UI state. Use `GetStateCount` to query how many states a controller has, and `GetStateAnimationDuration` to get the longest animated property duration in a state, including animation delay.
 
 ### Supported Properties
 
 | Property | Target | Value | Animation |
 | --- | --- | --- | --- |
 | `Active` | `GameObject` | `activeSelf` | No |
+| `AnchorMin` | `RectTransform` | `anchorMin` | Yes |
+| `AnchorMax` | `RectTransform` | `anchorMax` | Yes |
 | `AnchoredPosition` | `RectTransform` | `anchoredPosition` | Yes |
-| `LocalScale` | `RectTransform` | `localScale` | Yes |
-| `SizeDelta` | `RectTransform` | `sizeDelta` | Yes |
 | `CanvasGroupAlpha` | `CanvasGroup` | `alpha` | Yes |
+| `CanvasGroupInteractable` | `CanvasGroup` | `interactable` | No |
 | `ImageColor` | `UnityEngine.UI.Image` | `color` | Yes |
+| `ImageFillAmount` | `UnityEngine.UI.Image` | `fillAmount` | Yes |
+| `LocalRotation` | `RectTransform` | `localEulerAngles` | Yes |
+| `LocalScale` | `RectTransform` | `localScale` | Yes |
+| `Pivot` | `RectTransform` | `pivot` | Yes |
+| `SizeDelta` | `RectTransform` | `sizeDelta` | Yes |
 | `TextForTextMesh` | `TextMeshProUGUI` | `text` | No |
 | `TextMeshColor` | `TextMeshProUGUI` | `color` | Yes |
+| `TextMeshFontSize` | `TextMeshProUGUI` | `fontSize` | Yes |
 
 The editor uses `UIControllerProperty.IsValid` to decide whether a property can work on the current target. If a selected property does not apply to the assigned target, it is shown as invalid in the controller target list and the state property area.
 
@@ -224,9 +239,11 @@ A property is applied immediately without animation when any of the following is
 - `forceNoAnimation == true`
 - `AnimationDuration <= 0`
 
-Runtime animation currently supports `float`, `Vector2`, `Vector3`, and `Color`.
+Animated properties can also set an animation delay in seconds. Runtime delay uses DOTween's delayed startup and is included in `GetStateAnimationDuration`.
 
-Editor value editing currently supports `bool`, `string`, `float`, `Vector2`, `Vector3`, `Vector4`, and `Color`.
+Runtime animation currently supports `float`, `int`, `Vector2`, `Vector3`, and `Color`.
+
+Editor value editing currently supports `bool`, `string`, `float`, `int`, `Vector2`, `Vector3`, `Vector4`, and `Color`.
 
 Note: the editor can edit `Vector4`, but runtime animation does not create a tween for `Vector4`. A custom `Vector4` property will apply directly at runtime unless runtime tween support is added.
 
@@ -235,9 +252,11 @@ Note: the editor can edit `Vector4`, but runtime animation does not create a twe
 Current extension workflow:
 
 1. Create a serializable class that inherits from `UIControllerProperty<T>`.
-2. Implement `Name`, `IsValid`, `Capture`, `GetCurrentValue`, `GetTargetValue`, `SetCurrentValue`, and `GetValueText`.
+2. Implement `Name`, `IsValid`, `Capture`, `GetCurrentValue`, and `SetCurrentValue`.
 3. If the property supports animation, override `CanAnimate` to return `true`, and make sure `T` is a runtime-supported tween value type.
 4. Register the property in `UIControllerPropertyFactory` so it appears in the editor property dropdown.
+
+`GetTargetValue` returns the stored value by default and only needs to be overridden for special value normalization. `GetValueText` is obsolete and is no longer used by the editor workflow.
 
 Example:
 
@@ -281,11 +300,6 @@ public class UIControllerButtonInteractableProperty : UIControllerProperty<bool>
         return button != null ? button.interactable : _value;
     }
 
-    public override bool GetTargetValue()
-    {
-        return _value;
-    }
-
     public override void SetCurrentValue(RectTransform rectTransform, bool value)
     {
         Button button = GetButton(rectTransform);
@@ -293,11 +307,6 @@ public class UIControllerButtonInteractableProperty : UIControllerProperty<bool>
         {
             button.interactable = value;
         }
-    }
-
-    public override string GetValueText()
-    {
-        return _value ? "True" : "False";
     }
 
     private static Button GetButton(RectTransform rectTransform)
@@ -326,7 +335,7 @@ new UIControllerPropertyDefinition(
 - Target properties laid out in multiple columns based on available width.
 - Direct state property value editing without an extra Edit button.
 - Capture and preview state values.
-- Configure animation ease type and duration for animated properties.
+- Configure animation ease type, duration, and delay for animated properties.
 
 ### Roadmap
 
@@ -447,6 +456,12 @@ MIT. See [LICENSE](LICENSE).
 
 推荐从 [GitHub Releases](https://github.com/windsmoon/UIController/releases) 下载最新 release 包，然后导入 Unity 工程。
 
+也可以在 Unity Package Manager 中通过 Git URL 安装已打 tag 的版本：
+
+```text
+https://github.com/windsmoon/UIController.git#v0.5.0
+```
+
 DOTween 引用提示：如果你的项目里已经安装 DOTween，而导入的 release 包里也带了 DOTween，可以把包里重复的 DOTween 文件夹删除，避免重复引用或类型冲突。
 
 ### 源码位置
@@ -522,6 +537,8 @@ public class Example : MonoBehaviour
 public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
 public bool HasController(string controllerName)
 public bool HasControllerState(string controllerName, int stateIndex)
+public int GetStateCount(string controllerName)
+public float GetStateAnimationDuration(string controllerName, int stateIndex)
 ```
 
 参数说明：
@@ -530,20 +547,27 @@ public bool HasControllerState(string controllerName, int stateIndex)
 - `stateIndex`：从 `0` 开始的 state 索引。
 - `forceNoAnimation`：为 `true` 时立即应用目标值，不播放动画。
 
-`SetControllerState` 在找不到 controller、state、target state、property state、target `RectTransform`，或 property index 对应不上时会抛出异常。需要在切换 UI 状态前判断 controller 或 state 是否存在时，可以使用 `HasController` 和 `HasControllerState`。
+`SetControllerState` 在找不到 controller、state、target state、property state、target `RectTransform`，或 property index 对应不上时会抛出异常。需要在切换 UI 状态前判断 controller 或 state 是否存在时，可以使用 `HasController` 和 `HasControllerState`。需要查询 controller 有多少个 state 时，可以使用 `GetStateCount`；需要获取某个 state 的最长动画时长时，可以使用 `GetStateAnimationDuration`，返回值会包含动画延迟。
 
 ### 支持的属性
 
 | 属性 | 目标组件 | 控制值 | 支持动画 |
 | --- | --- | --- | --- |
 | `Active` | `GameObject` | `activeSelf` | 否 |
+| `AnchorMin` | `RectTransform` | `anchorMin` | 是 |
+| `AnchorMax` | `RectTransform` | `anchorMax` | 是 |
 | `AnchoredPosition` | `RectTransform` | `anchoredPosition` | 是 |
-| `LocalScale` | `RectTransform` | `localScale` | 是 |
-| `SizeDelta` | `RectTransform` | `sizeDelta` | 是 |
 | `CanvasGroupAlpha` | `CanvasGroup` | `alpha` | 是 |
+| `CanvasGroupInteractable` | `CanvasGroup` | `interactable` | 否 |
 | `ImageColor` | `UnityEngine.UI.Image` | `color` | 是 |
+| `ImageFillAmount` | `UnityEngine.UI.Image` | `fillAmount` | 是 |
+| `LocalRotation` | `RectTransform` | `localEulerAngles` | 是 |
+| `LocalScale` | `RectTransform` | `localScale` | 是 |
+| `Pivot` | `RectTransform` | `pivot` | 是 |
+| `SizeDelta` | `RectTransform` | `sizeDelta` | 是 |
 | `TextForTextMesh` | `TextMeshProUGUI` | `text` | 否 |
 | `TextMeshColor` | `TextMeshProUGUI` | `color` | 是 |
+| `TextMeshFontSize` | `TextMeshProUGUI` | `fontSize` | 是 |
 
 编辑器会用 `UIControllerProperty.IsValid` 判断 property 是否能作用于当前 target。如果选择的 property 对指定 target 不生效，它会在 Controller Targets 和 state property 区域中显示为无效。
 
@@ -556,9 +580,11 @@ public bool HasControllerState(string controllerName, int stateIndex)
 - `forceNoAnimation == true`
 - `AnimationDuration <= 0`
 
-当前运行时动画支持 `float`、`Vector2`、`Vector3` 和 `Color`。
+可动画属性还可以配置以秒为单位的动画延迟。运行时延迟使用 DOTween 的延迟启动实现，并会计入 `GetStateAnimationDuration` 的结果。
 
-编辑器当前可直接编辑的 property value 类型包括 `bool`、`string`、`float`、`Vector2`、`Vector3`、`Vector4` 和 `Color`。
+当前运行时动画支持 `float`、`int`、`Vector2`、`Vector3` 和 `Color`。
+
+编辑器当前可直接编辑的 property value 类型包括 `bool`、`string`、`float`、`int`、`Vector2`、`Vector3`、`Vector4` 和 `Color`。
 
 注意：编辑器能编辑 `Vector4`，但当前运行时动画逻辑没有为 `Vector4` 创建 tween。如果自定义 `Vector4` property，运行时会直接应用目标值，除非后续补充对应 tween 支持。
 
@@ -567,9 +593,11 @@ public bool HasControllerState(string controllerName, int stateIndex)
 当前版本的扩展方式：
 
 1. 新建一个可序列化类，继承 `UIControllerProperty<T>`。
-2. 实现 `Name`、`IsValid`、`Capture`、`GetCurrentValue`、`GetTargetValue`、`SetCurrentValue`、`GetValueText`。
+2. 实现 `Name`、`IsValid`、`Capture`、`GetCurrentValue`、`SetCurrentValue`。
 3. 如果支持动画，重写 `CanAnimate` 返回 `true`，并确保 `T` 是当前运行时支持 tween 的类型。
 4. 在 `UIControllerPropertyFactory` 中注册这个属性，让它出现在编辑器属性下拉菜单里。
+
+`GetTargetValue` 默认会返回已保存的属性值，只有需要特殊值归一化时才需要重写。`GetValueText` 已经过时，当前编辑器工作流不再使用它。
 
 示例：
 
@@ -613,11 +641,6 @@ public class UIControllerButtonInteractableProperty : UIControllerProperty<bool>
         return button != null ? button.interactable : _value;
     }
 
-    public override bool GetTargetValue()
-    {
-        return _value;
-    }
-
     public override void SetCurrentValue(RectTransform rectTransform, bool value)
     {
         Button button = GetButton(rectTransform);
@@ -625,11 +648,6 @@ public class UIControllerButtonInteractableProperty : UIControllerProperty<bool>
         {
             button.interactable = value;
         }
-    }
-
-    public override string GetValueText()
-    {
-        return _value ? "True" : "False";
     }
 
     private static Button GetButton(RectTransform rectTransform)
@@ -658,7 +676,7 @@ new UIControllerPropertyDefinition(
 - Target property 会根据窗口宽度自动多列布局。
 - State 中 property 值直接暴露编辑，不需要额外点击 Edit 按钮。
 - 支持捕获和预览状态值。
-- 支持为可动画属性配置动画类型和动画时长。
+- 支持为可动画属性配置动画类型、动画时长和动画延迟。
 
 ### 后续计划
 

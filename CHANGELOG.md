@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0
+
+### English
+
+- Added per-property animation delay settings and runtime DOTween delay playback.
+- Added `GetStateCount` and `GetStateAnimationDuration` runtime APIs for querying controller state data and the longest animated state duration.
+- Added editor and runtime animation support for `int` properties.
+- Added built-in properties for `CanvasGroupInteractable`, `LocalRotation`, `ImageFillAmount`, `TextMeshFontSize`, `Pivot`, `AnchorMin`, and `AnchorMax`.
+- Changed `UIControllerProperty<T>.GetTargetValue` to provide a default implementation that returns the stored value.
+- Marked `GetValueText` obsolete because it is no longer used by the editor workflow.
+
+### 中文
+
+- 新增每个属性单独配置动画延迟，并在运行时通过 DOTween 播放延迟。
+- 新增 `GetStateCount` 和 `GetStateAnimationDuration` 运行时 API，用于查询 controller 的 state 数量和某个 state 的最长动画时长。
+- 新增 `int` 属性的编辑器编辑和运行时动画支持。
+- 新增内置属性：`CanvasGroupInteractable`、`LocalRotation`、`ImageFillAmount`、`TextMeshFontSize`、`Pivot`、`AnchorMin`、`AnchorMax`。
+- `UIControllerProperty<T>.GetTargetValue` 改为提供默认实现，默认返回已保存的属性值。
+- 将 `GetValueText` 标记为过时，因为当前编辑器工作流不再使用它。
+
 ## 0.4.0
 
 ### English
