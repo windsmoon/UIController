@@ -1,7 +1,7 @@
 {
   "name": "com.windsmoon.uicontroller",
   "displayName": "UI Controller",
-  "version": "0.1.0",
+  "version": "0.5.1",
   "unity": "6000.0",
   "description": "A Unity package for building reusable UI controller workflows.",
   "keywords": [

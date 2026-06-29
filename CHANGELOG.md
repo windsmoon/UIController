@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.1
+
+### English
+
+- Fixed controller state animation cleanup so runtime state switching only stops an existing tween when both the target and property match the new animated property.
+- Kept full tween cleanup for panel destruction and edit-mode preview state changes.
+- Updated edit-mode preview switching so previous preview tweens are moved to their final values before being cleared.
+
+### 中文
+
+- 修复 controller state 动画清理逻辑：运行时切换状态时，只有 target 和 property 都相同的旧 tween 才会被停止。
+- 保留 panel 销毁和编辑器 edit mode 预览切换状态时的全量 tween 清理。
+- 调整编辑器 edit mode 预览切换逻辑，旧预览 tween 会先应用到最终值再被清理。
+
 ## 0.5.0
 
 ### English

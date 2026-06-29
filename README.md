@@ -118,7 +118,7 @@ Recommended: download the latest release package from [GitHub Releases](https://
 You can also install the tagged package through Unity Package Manager using this Git URL:
 
 ```text
-https://github.com/windsmoon/UIController.git#v0.5.0
+https://github.com/windsmoon/UIController.git#v0.5.1
 ```
 
 DOTween note: if your project already has DOTween installed, and the release package you imported also contains DOTween, delete the duplicated DOTween folder from the imported package to avoid duplicate references or type conflicts.
@@ -459,7 +459,7 @@ MIT. See [LICENSE](LICENSE).
 也可以在 Unity Package Manager 中通过 Git URL 安装已打 tag 的版本：
 
 ```text
-https://github.com/windsmoon/UIController.git#v0.5.0
+https://github.com/windsmoon/UIController.git#v0.5.1
 ```
 
 DOTween 引用提示：如果你的项目里已经安装 DOTween，而导入的 release 包里也带了 DOTween，可以把包里重复的 DOTween 文件夹删除，避免重复引用或类型冲突。
