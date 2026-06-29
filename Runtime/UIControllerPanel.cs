@@ -85,6 +85,11 @@ namespace Windsmoon.UIController
         #endregion
 
         #region methods
+        private void OnDestroy()
+        {
+            KillTweens();
+        }
+
         public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
         {
             if (_controllerDict == null)
@@ -289,8 +294,6 @@ namespace Windsmoon.UIController
 
         private void ApplyControllerState(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation)
         {
-            KillTweens();
-
 #if UNITY_EDITOR
             if (Application.isPlaying == false)
             {
@@ -365,6 +368,8 @@ namespace Windsmoon.UIController
 
         private void ApplyProperty(UIControllerProperty property, string propertyName, RectTransform rectTransform, bool forceNoAnimation)
         {
+            KillTween(rectTransform, propertyName);
+
             if (property.CanAnimate == false || property.NeedAnimate == false || forceNoAnimation || property.AnimationDuration <= 0f)
             {
                 property.ApplyTargetValue(rectTransform);
@@ -496,6 +501,23 @@ namespace Windsmoon.UIController
 
             PreparePreviewTween(tween);
             _propertyTweenDict[new UIControllerTweenKey(rectTransform, propertyName)] = tween;
+        }
+
+        private void KillTween(RectTransform rectTransform, string propertyName)
+        {
+            if (_propertyTweenDict == null)
+            {
+                return;
+            }
+
+            UIControllerTweenKey key = new UIControllerTweenKey(rectTransform, propertyName);
+            if (_propertyTweenDict.TryGetValue(key, out Tween tween) == false)
+            {
+                return;
+            }
+
+            tween?.Kill(false);
+            _propertyTweenDict.Remove(key);
         }
 
         private void KillTweens()
