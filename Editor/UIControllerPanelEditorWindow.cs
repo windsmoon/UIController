@@ -1191,7 +1191,7 @@ namespace Windsmoon.UIController.Editor
             bool hasAnimatedProperty = HasAnimatedProperty(controllerData, controllerData.StateList[stateIndex]);
             if (Application.isPlaying == false)
             {
-                DOTweenEditorPreview.Stop(false, true);
+                DOTweenEditorPreview.Stop(false, false);
                 DOTweenEditorPreview.Start(null);
             }
 
