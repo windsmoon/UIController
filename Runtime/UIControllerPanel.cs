@@ -297,6 +297,7 @@ namespace Windsmoon.UIController
 #if UNITY_EDITOR
             if (Application.isPlaying == false)
             {
+                KillTweens(true);
                 _pendingPreviewAnimationCount = 0;
             }
 #endif
@@ -520,7 +521,7 @@ namespace Windsmoon.UIController
             _propertyTweenDict.Remove(key);
         }
 
-        private void KillTweens()
+        private void KillTweens(bool complete = false)
         {
             if (_propertyTweenDict == null)
             {
@@ -529,7 +530,7 @@ namespace Windsmoon.UIController
 
             foreach (Tween tween in _propertyTweenDict.Values)
             {
-                tween?.Kill(false);
+                tween?.Kill(complete);
             }
 
             _propertyTweenDict.Clear();
