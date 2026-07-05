@@ -587,6 +587,14 @@ namespace Windsmoon.UIController.Editor
                 ApplyMutation("Edit UIController State Name", () => stateData.Name = capturedName);
             }
 
+            if (string.IsNullOrWhiteSpace(stateData.Name) == false)
+            {
+                if (controllerData.TryGetStateIndex(stateData.Name, out int stateIndex) && stateIndex != currentStateIndex)
+                {
+                    EditorGUILayout.HelpBox("Duplicate state name. Name lookup keeps the first state with this name.", MessageType.Error);
+                }
+            }
+
             EditorGUI.BeginChangeCheck();
             string newComment = EditorGUILayout.TextField("Comment", stateData.Comment ?? string.Empty);
             if (EditorGUI.EndChangeCheck())
