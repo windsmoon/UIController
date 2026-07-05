@@ -8,6 +8,8 @@ namespace Windsmoon.UIController
     public class UIControllerStateData
     {
         #region fields
+        [SerializeField]
+        private string _name;
 #if UNITY_EDITOR
         [SerializeField]
         private string _comment;
@@ -19,6 +21,12 @@ namespace Windsmoon.UIController
         #endregion
 
         #region properties
+        public string Name
+        {
+            get => _name;
+            set => _name = value;
+        }
+
 #if UNITY_EDITOR
 #pragma warning disable CS0618
         public int Index

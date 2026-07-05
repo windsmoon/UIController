@@ -580,6 +580,14 @@ namespace Windsmoon.UIController.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();
+            string newName = EditorGUILayout.TextField("Name", stateData.Name ?? string.Empty);
+            if (EditorGUI.EndChangeCheck())
+            {
+                string capturedName = newName;
+                ApplyMutation("Edit UIController State Name", () => stateData.Name = capturedName);
+            }
+
+            EditorGUI.BeginChangeCheck();
             string newComment = EditorGUILayout.TextField("Comment", stateData.Comment ?? string.Empty);
             if (EditorGUI.EndChangeCheck())
             {
@@ -1542,8 +1550,9 @@ namespace Windsmoon.UIController.Editor
             string[] options = new string[stateList.Count];
             for (int i = 0; i < stateList.Count; i++)
             {
-                string comment = stateList[i]?.Comment;
-                options[i] = string.IsNullOrWhiteSpace(comment) ? $"State {i}" : $"State {i} - {comment}";
+                string stateName = stateList[i]?.Name ?? string.Empty;
+                string comment = stateList[i]?.Comment ?? string.Empty;
+                options[i] = $"State {i} : {stateName} - {comment}";
             }
 
             return options;

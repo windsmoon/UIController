@@ -111,6 +111,27 @@ namespace Windsmoon.UIController
             ApplyControllerState(controllerData, stateData, forceNoAnimation);
         }
 
+        public void SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)
+        {
+            if (_controllerDict == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(controllerName))
+            {
+                throw new Exception($"controllerName is null or empty on panel {name}");
+            }
+            if (string.IsNullOrWhiteSpace(stateName))
+            {
+                throw new Exception($"stateName is null or whitespace on panel {name}");
+            }
+
+            UIControllerData controllerData = FindController(controllerName);
+            UIControllerStateData stateData = FindState(controllerData, stateName);
+            ApplyControllerState(controllerData, stateData, forceNoAnimation);
+        }
+
         public bool HasController(string controllerName)
         {
             if (string.IsNullOrEmpty(controllerName) || _controllerDict == null)
@@ -131,6 +152,23 @@ namespace Windsmoon.UIController
             UIControllerData controllerData = _controllerDict[controllerName];
             List<UIControllerStateData> stateList = controllerData.StateList;
             return stateIndex < stateList.Count;
+        }
+
+        public bool HasControllerState(string controllerName, string stateName)
+        {
+            return TryGetStateIndex(controllerName, stateName, out _);
+        }
+
+        public bool TryGetStateIndex(string controllerName, string stateName, out int stateIndex)
+        {
+            stateIndex = -1;
+            if (string.IsNullOrWhiteSpace(stateName) || HasController(controllerName) == false)
+            {
+                return false;
+            }
+
+            UIControllerData controllerData = _controllerDict[controllerName];
+            return controllerData.TryGetStateIndex(stateName, out stateIndex);
         }
 
         public int GetStateCount(string controllerName)
@@ -172,6 +210,16 @@ namespace Windsmoon.UIController
             }
 
             return maxDuration;
+        }
+
+        public float GetStateAnimationDuration(string controllerName, string stateName)
+        {
+            if (TryGetStateIndex(controllerName, stateName, out int stateIndex) == false)
+            {
+                return 0f;
+            }
+
+            return GetStateAnimationDuration(controllerName, stateIndex);
         }
 
 #if UNITY_EDITOR
@@ -257,11 +305,7 @@ namespace Windsmoon.UIController
                     continue;
                 }
 
-                List<UIControllerStateData> stateList = controllerData.StateList;
-                for (int stateIndex = 0; stateIndex < stateList.Count; stateIndex++)
-                {
-                    stateList[stateIndex]?.RebuildCache();
-                }
+                controllerData.RebuildCache();
             }
         }
 
@@ -290,6 +334,16 @@ namespace Windsmoon.UIController
             }
 
             return stateData;
+        }
+
+        private UIControllerStateData FindState(UIControllerData controllerData, string stateName)
+        {
+            if (controllerData.TryGetStateIndex(stateName, out int stateIndex))
+            {
+                return FindState(controllerData, stateIndex);
+            }
+
+            throw new Exception($"can't find state name {stateName} in controller {controllerData.Name} on panel {name}");
         }
 
         private void ApplyControllerState(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation)
