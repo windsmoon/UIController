@@ -96,11 +96,11 @@ Use this when you need to migrate every `UIControllerPanel` inside prefabs under
 
 ### Features
 
-- Define named UI controllers and states in the Unity Inspector.
+- Define named UI controllers and named states in the Unity Inspector.
 - Define controller-level targets and property lists once, then edit per-state values against that shared structure.
 - Capture current UI values into a state from editor tools.
 - Preview state changes in the editor.
-- Apply states at runtime by controller name and state index.
+- Apply states at runtime by controller name and state index or state name.
 - Reuse common control effects, such as selected button scaling and highlighted text or image colors.
 - Animate supported numeric, vector, and color properties through DOTween.
 
@@ -118,7 +118,7 @@ Recommended: download the latest release package from [GitHub Releases](https://
 You can also install the tagged package through Unity Package Manager using this Git URL:
 
 ```text
-https://github.com/windsmoon/UIController.git#v0.5.1
+https://github.com/windsmoon/UIController.git#v0.6.0
 ```
 
 DOTween note: if your project already has DOTween installed, and the release package you imported also contains DOTween, delete the duplicated DOTween folder from the imported package to avoid duplicate references or type conflicts.
@@ -151,15 +151,16 @@ UIControllerPanel
           _propertyNameList
       _stateList
         UIControllerStateData
+          _name
           _comment             editor only
           _targetStateList
             UIControllerTargetStateData
               _propertyList    SerializeReference UIControllerProperty
 ```
 
-`UIControllerData.TargetList` defines which targets the controller owns and which properties each target controls. `UIControllerStateData.TargetStateList` no longer stores target names; it stores per-target state values in the same order as `TargetList`. Each `UIControllerTargetStateData.PropertyList` stores property data in the same order as `PropertyNameList`.
+`UIControllerData.TargetList` defines which targets the controller owns and which properties each target controls. `UIControllerStateData.Name` stores an optional runtime state name for name-based lookup; blank or whitespace names are ignored. `UIControllerStateData.TargetStateList` no longer stores target names; it stores per-target state values in the same order as `TargetList`. Each `UIControllerTargetStateData.PropertyList` stores property data in the same order as `PropertyNameList`.
 
-When a state is applied, `UIControllerPanel` finds the controller by name, finds the state by index, then applies values using matching target and property indexes. The editor synchronizes all states whenever a target or property is added, removed, or changed.
+When a state is applied, `UIControllerPanel` finds the controller by name, finds the state by index or state name, then applies values using matching target and property indexes. The editor synchronizes all states whenever a target or property is added, removed, or changed. If multiple states under the same controller share the same name, name lookup keeps the first state index.
 
 ### Quick Start
 
@@ -169,10 +170,11 @@ When a state is applied, `UIControllerPanel` finds the controller by name, finds
 4. In **Controller Targets**, add a target and assign its `RectTransform`.
 5. Add the properties that target should control.
 6. Add one or more states.
-7. Use the **State** dropdown to select the state being edited.
-8. Edit property values directly in the state area, or click **Capture** to capture current UI values.
-9. Click **Show** to preview a state.
-10. Switch states from code:
+7. Set each state's **Name** when you want runtime name lookup.
+8. Use the **State** dropdown to select the state being edited.
+9. Edit property values directly in the state area, or click **Capture** to capture current UI values.
+10. Click **Show** to preview a state.
+11. Switch states from code:
 
 ```csharp
 using Windsmoon.UIController;
@@ -185,7 +187,7 @@ public class Example : MonoBehaviour
 
     public void ShowLevelTwo()
     {
-        _panel.SetControllerState("Level", 1);
+        _panel.SetControllerState("Level", "LevelTwo");
     }
 }
 ```
@@ -194,19 +196,24 @@ public class Example : MonoBehaviour
 
 ```csharp
 public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
+public void SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)
 public bool HasController(string controllerName)
 public bool HasControllerState(string controllerName, int stateIndex)
+public bool HasControllerState(string controllerName, string stateName)
+public bool TryGetStateIndex(string controllerName, string stateName, out int stateIndex)
 public int GetStateCount(string controllerName)
 public float GetStateAnimationDuration(string controllerName, int stateIndex)
+public float GetStateAnimationDuration(string controllerName, string stateName)
 ```
 
 Parameters:
 
 - `controllerName`: The controller name configured in the panel.
 - `stateIndex`: The zero-based state index.
+- `stateName`: The state name configured in the panel. Blank or whitespace names are not registered for name lookup.
 - `forceNoAnimation`: Applies values immediately when `true`.
 
-`SetControllerState` throws when controller, state, target state, property state, target `RectTransform`, or matching property index data cannot be found. Use `HasController` and `HasControllerState` when you need to check whether a controller or state exists before switching UI state. Use `GetStateCount` to query how many states a controller has, and `GetStateAnimationDuration` to get the longest animated property duration in a state, including animation delay.
+`SetControllerState` throws when controller, state, target state, property state, target `RectTransform`, or matching property index data cannot be found. Use `HasController`, `HasControllerState`, and `TryGetStateIndex` when you need to check whether a controller or state exists before switching UI state. `TryGetStateIndex` returns `false` and outputs `-1` when a state name is not registered. Use `GetStateCount` to query how many states a controller has, and `GetStateAnimationDuration` to get the longest animated property duration in a state, including animation delay.
 
 ### Supported Properties
 
@@ -332,6 +339,7 @@ new UIControllerPropertyDefinition(
 - Controller, state, target, and property dropdowns.
 - Collapsible **Controller Targets** section.
 - One visible state at a time, selected through a state dropdown.
+- State `Name` editing and duplicate name warnings.
 - Target properties laid out in multiple columns based on available width.
 - Direct state property value editing without an extra Edit button.
 - Capture and preview state values.
@@ -437,11 +445,11 @@ MIT. See [LICENSE](LICENSE).
 
 ### 功能特性
 
-- 在 Unity Inspector 中配置命名 UI Controller 和多个 State。
+- 在 Unity Inspector 中配置命名 UI Controller 和命名 State。
 - 在 controller 层统一定义 target 和 property 列表，再在每个 state 下编辑对应值。
 - 在编辑器中一键捕获当前 UI 值到状态配置。
 - 支持编辑器内预览状态切换。
-- 运行时通过 controller 名称和 state 索引切换 UI。
+- 运行时通过 controller 名称和 state 索引或 state name 切换 UI。
 - 复用常见控件效果，例如按钮选中缩放、文字高亮、图片变色等状态表现。
 - 对数值、向量、颜色类属性支持 DOTween 动画。
 
@@ -459,7 +467,7 @@ MIT. See [LICENSE](LICENSE).
 也可以在 Unity Package Manager 中通过 Git URL 安装已打 tag 的版本：
 
 ```text
-https://github.com/windsmoon/UIController.git#v0.5.1
+https://github.com/windsmoon/UIController.git#v0.6.0
 ```
 
 DOTween 引用提示：如果你的项目里已经安装 DOTween，而导入的 release 包里也带了 DOTween，可以把包里重复的 DOTween 文件夹删除，避免重复引用或类型冲突。
@@ -492,15 +500,16 @@ UIControllerPanel
           _propertyNameList
       _stateList
         UIControllerStateData
+          _name
           _comment             editor only
           _targetStateList
             UIControllerTargetStateData
               _propertyList    SerializeReference UIControllerProperty
 ```
 
-`UIControllerData.TargetList` 定义 controller 控制哪些 target，以及每个 target 控制哪些 property。`UIControllerStateData.TargetStateList` 不再保存 target 名称，而是按 `TargetList` 的顺序保存每个 target 的状态值。每个 `UIControllerTargetStateData.PropertyList` 也按 `PropertyNameList` 的顺序保存 property 数据。
+`UIControllerData.TargetList` 定义 controller 控制哪些 target，以及每个 target 控制哪些 property。`UIControllerStateData.Name` 保存可选的运行时 state name，用于按名称查询 state；空白或全空白字符的 name 不会注册到查询缓存。`UIControllerStateData.TargetStateList` 不再保存 target 名称，而是按 `TargetList` 的顺序保存每个 target 的状态值。每个 `UIControllerTargetStateData.PropertyList` 也按 `PropertyNameList` 的顺序保存 property 数据。
 
-切换状态时，`UIControllerPanel` 会按 controller name 找到 controller，按 state index 找到 state，然后用 target index 和 property index 对齐应用数据。编辑器在增删或修改 target/property 时，会同步所有 state 的结构。
+切换状态时，`UIControllerPanel` 会按 controller name 找到 controller，按 state index 或 state name 找到 state，然后用 target index 和 property index 对齐应用数据。编辑器在增删或修改 target/property 时，会同步所有 state 的结构。如果同一个 controller 下多个 state 使用了相同 name，按 name 查询时会保留第一个 state index。
 
 ### 快速开始
 
@@ -510,10 +519,11 @@ UIControllerPanel
 4. 在 **Controller Targets** 中添加 target，并指定 `RectTransform`。
 5. 给 target 添加需要控制的 property。
 6. 添加一个或多个 state。
-7. 通过 **State** 下拉框选择当前正在编辑的 state。
-8. 在 state 区域直接编辑 property 值，或点击 **Capture** 捕获当前 UI 值。
-9. 需要预览时点击 **Show**。
-10. 在代码中切换状态：
+7. 需要运行时按名称查询时，填写每个 state 的 **Name**。
+8. 通过 **State** 下拉框选择当前正在编辑的 state。
+9. 在 state 区域直接编辑 property 值，或点击 **Capture** 捕获当前 UI 值。
+10. 需要预览时点击 **Show**。
+11. 在代码中切换状态：
 
 ```csharp
 using Windsmoon.UIController;
@@ -526,7 +536,7 @@ public class Example : MonoBehaviour
 
     public void ShowLevelTwo()
     {
-        _panel.SetControllerState("Level", 1);
+        _panel.SetControllerState("Level", "LevelTwo");
     }
 }
 ```
@@ -535,19 +545,24 @@ public class Example : MonoBehaviour
 
 ```csharp
 public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
+public void SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)
 public bool HasController(string controllerName)
 public bool HasControllerState(string controllerName, int stateIndex)
+public bool HasControllerState(string controllerName, string stateName)
+public bool TryGetStateIndex(string controllerName, string stateName, out int stateIndex)
 public int GetStateCount(string controllerName)
 public float GetStateAnimationDuration(string controllerName, int stateIndex)
+public float GetStateAnimationDuration(string controllerName, string stateName)
 ```
 
 参数说明：
 
 - `controllerName`：在 panel 中配置的 UI Controller 名称。
 - `stateIndex`：从 `0` 开始的 state 索引。
+- `stateName`：在 panel 中配置的 state name。空白或全空白字符的 name 不会注册到按名称查询。
 - `forceNoAnimation`：为 `true` 时立即应用目标值，不播放动画。
 
-`SetControllerState` 在找不到 controller、state、target state、property state、target `RectTransform`，或 property index 对应不上时会抛出异常。需要在切换 UI 状态前判断 controller 或 state 是否存在时，可以使用 `HasController` 和 `HasControllerState`。需要查询 controller 有多少个 state 时，可以使用 `GetStateCount`；需要获取某个 state 的最长动画时长时，可以使用 `GetStateAnimationDuration`，返回值会包含动画延迟。
+`SetControllerState` 在找不到 controller、state、target state、property state、target `RectTransform`，或 property index 对应不上时会抛出异常。需要在切换 UI 状态前判断 controller 或 state 是否存在时，可以使用 `HasController`、`HasControllerState` 和 `TryGetStateIndex`。`TryGetStateIndex` 在 state name 未注册时返回 `false`，并把输出 index 设为 `-1`。需要查询 controller 有多少个 state 时，可以使用 `GetStateCount`；需要获取某个 state 的最长动画时长时，可以使用 `GetStateAnimationDuration`，返回值会包含动画延迟。
 
 ### 支持的属性
 
@@ -673,6 +688,7 @@ new UIControllerPropertyDefinition(
 - Controller、State、Target、Property 下拉选择。
 - **Controller Targets** 区域可以整体收起。
 - State 区域一次只显示一个 state，并通过下拉框选择。
+- 支持编辑 state `Name`，并提示重复 name。
 - Target property 会根据窗口宽度自动多列布局。
 - State 中 property 值直接暴露编辑，不需要额外点击 Edit 按钮。
 - 支持捕获和预览状态值。

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.0
+
+### English
+
+- Added runtime state names so each state can have a meaningful string identifier in addition to its list index.
+- Added name-based state APIs: `SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)`, `HasControllerState(string controllerName, string stateName)`, `TryGetStateIndex`, and name-based `GetStateAnimationDuration`.
+- Added state name lookup caches per controller. Blank or whitespace state names are ignored, and duplicate names keep the first state index.
+- Updated the UIController editor window with a state `Name` field, duplicate state name warnings, and state dropdown labels in `State {index} : {name} - {comment}` format.
+
+### 中文
+
+- 新增运行时 state name，每个 state 除了列表 index 之外，还可以配置一个更有意义的字符串标识。
+- 新增基于 name 的 state API：`SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)`、`HasControllerState(string controllerName, string stateName)`、`TryGetStateIndex`，以及基于 name 的 `GetStateAnimationDuration`。
+- 新增每个 controller 的 state name 查询缓存。空白或全空白字符的 state name 会被忽略；重复 name 保留第一个 state index。
+- 更新 UIController 编辑器窗口，新增 state `Name` 字段、重复 state name 提示，并将 state 下拉显示格式改为 `State {index} : {name} - {comment}`。
+
 ## 0.5.1
 
 ### English
