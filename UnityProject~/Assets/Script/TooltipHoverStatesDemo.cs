@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Windsmoon.UIController;
 
@@ -9,10 +10,16 @@ public static class TooltipHoverStatesDemo
     private const string TooltipControllerName = "Tooltip";
     private const string TargetControllerName = "HoverTargetPosition";
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void BindInputEvents()
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Initialize()
     {
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != SceneName)
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != SceneName)
         {
             return;
         }

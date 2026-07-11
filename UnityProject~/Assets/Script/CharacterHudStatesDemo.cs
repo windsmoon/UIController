@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Windsmoon.UIController;
 
@@ -7,10 +8,16 @@ public static class CharacterHudStatesDemo
     private const string SceneName = "CharacterHudStates";
     private const string ControllerName = "CharacterHUD";
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void BindStateButtons()
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Initialize()
     {
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != SceneName)
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != SceneName)
         {
             return;
         }

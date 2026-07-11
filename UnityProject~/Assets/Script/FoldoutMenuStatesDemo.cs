@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Windsmoon.UIController;
 
@@ -8,10 +9,16 @@ public static class FoldoutMenuStatesDemo
     private const string SceneName = "FoldoutMenuStates";
     private const string ControllerName = "FoldoutMenu";
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void BindToggleEvents()
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Initialize()
     {
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != SceneName)
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != SceneName)
         {
             return;
         }
