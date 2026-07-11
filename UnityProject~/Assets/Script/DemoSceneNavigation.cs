@@ -1,10 +1,42 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Windsmoon.UIController;
 
-public static class DemoSceneNavigation
+public class DemoSceneNavigation : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
 {
     private const string MainSceneName = "Main";
+
+    [SerializeField]
+    private UIControllerPanel _panel;
+    [SerializeField]
+    private string _controllerName;
+
+    private void Awake()
+    {
+        _panel.SetControllerState(_controllerName, "Normal", true);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        _panel.SetControllerState(_controllerName, "Hover");
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        _panel.SetControllerState(_controllerName, "Normal");
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        _panel.SetControllerState(_controllerName, "Pressed");
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        _panel.SetControllerState(_controllerName, "Hover");
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Initialize()
