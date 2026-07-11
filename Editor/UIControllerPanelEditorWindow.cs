@@ -29,6 +29,8 @@ namespace Windsmoon.UIController.Editor
         private readonly Dictionary<int, bool> _targetSectionExpandedDict = new Dictionary<int, bool>();
         private readonly Dictionary<int, int> _currentStateIndexDict = new Dictionary<int, int>();
         private readonly List<string> _lastMigrationWarningList = new List<string>();
+        private readonly HashSet<int> _duplicateStateNameIndexSet = new HashSet<int>();
+        private int _duplicateStateNameControllerIndex = -1;
         private GUIStyle _sectionBoxStyle;
         private GUIStyle _sectionHeaderStyle;
         private GUIStyle _controllerTargetHeaderStyle;
@@ -112,6 +114,7 @@ namespace Windsmoon.UIController.Editor
 
             ValidateCurrentControllerIndex(controllerList);
             DrawPanelHeader(controllerList);
+            EnsureDuplicateStateNameScan(controllerList);
             DrawMigrationNotice();
 
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
@@ -133,6 +136,8 @@ namespace Windsmoon.UIController.Editor
 
             _uiControllerPanel = uiControllerPanel;
             _currentControllerIndex = controllerIndex;
+            _duplicateStateNameControllerIndex = -1;
+            _duplicateStateNameIndexSet.Clear();
             _pendingAnimatedShowDirty = false;
             _scrollPosition = Vector2.zero;
 
@@ -152,6 +157,8 @@ namespace Windsmoon.UIController.Editor
             _targetSectionExpandedDict.Clear();
             _currentStateIndexDict.Clear();
             _lastMigrationWarningList.Clear();
+            _duplicateStateNameIndexSet.Clear();
+            _duplicateStateNameControllerIndex = -1;
         }
 
         private static UIControllerPanel GetSelectedUIControllerPanel()
@@ -185,6 +192,7 @@ namespace Windsmoon.UIController.Editor
                 if (newControllerIndex != _currentControllerIndex)
                 {
                     _currentControllerIndex = newControllerIndex;
+                    _duplicateStateNameControllerIndex = -1;
                     _scrollPosition = Vector2.zero;
                 }
             }
@@ -572,6 +580,7 @@ namespace Windsmoon.UIController.Editor
                     controllerData.StateList.RemoveAt(capturedIndex);
                     int nextStateIndex = controllerData.StateList.Count == 0 ? 0 : Mathf.Clamp(capturedIndex, 0, controllerData.StateList.Count - 1);
                     SetCurrentStateIndex(nextStateIndex);
+                    _duplicateStateNameControllerIndex = -1;
                 });
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
@@ -585,14 +594,12 @@ namespace Windsmoon.UIController.Editor
             {
                 string capturedName = newName;
                 ApplyMutation("Edit UIController State Name", () => stateData.Name = capturedName);
+                RebuildDuplicateStateNameIndexSet(controllerData);
             }
 
-            if (string.IsNullOrWhiteSpace(stateData.Name) == false)
+            if (_duplicateStateNameIndexSet.Contains(currentStateIndex))
             {
-                if (controllerData.TryGetStateIndex(stateData.Name, out int stateIndex) && stateIndex != currentStateIndex)
-                {
-                    EditorGUILayout.HelpBox("Duplicate state name. Name lookup keeps the first state with this name.", MessageType.Error);
-                }
+                EditorGUILayout.HelpBox("Duplicate state name. Name lookup keeps the first state with this name.", MessageType.Error);
             }
 
             EditorGUI.BeginChangeCheck();
@@ -1156,6 +1163,42 @@ namespace Windsmoon.UIController.Editor
             }
 
             return -1;
+        }
+
+        private void EnsureDuplicateStateNameScan(List<UIControllerData> controllerList)
+        {
+            if (_duplicateStateNameControllerIndex == _currentControllerIndex)
+            {
+                return;
+            }
+
+            RebuildDuplicateStateNameIndexSet(controllerList[_currentControllerIndex]);
+        }
+
+        private void RebuildDuplicateStateNameIndexSet(UIControllerData controllerData)
+        {
+            _duplicateStateNameIndexSet.Clear();
+            _duplicateStateNameControllerIndex = _currentControllerIndex;
+
+            List<UIControllerStateData> stateList = controllerData.StateList;
+            Dictionary<string, int> stateNameIndexDict = new Dictionary<string, int>(stateList.Count);
+            for (int i = 0; i < stateList.Count; i++)
+            {
+                string stateName = stateList[i]?.Name;
+                if (string.IsNullOrWhiteSpace(stateName))
+                {
+                    continue;
+                }
+
+                if (stateNameIndexDict.TryGetValue(stateName, out int firstStateIndex))
+                {
+                    _duplicateStateNameIndexSet.Add(firstStateIndex);
+                    _duplicateStateNameIndexSet.Add(i);
+                    continue;
+                }
+
+                stateNameIndexDict.Add(stateName, i);
+            }
         }
 
         private void RefreshPanelCaches()

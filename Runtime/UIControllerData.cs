@@ -67,8 +67,6 @@ namespace Windsmoon.UIController
 
                 if (_stateNameIndexDict.ContainsKey(stateData.Name))
                 {
-                    string controllerName = string.IsNullOrWhiteSpace(Name) ? "<unnamed>" : Name;
-                    Debug.LogError($"controller {controllerName} has duplicate state name {stateData.Name} at state index {i}. The first state name entry was kept.");
                     continue;
                 }
 
