@@ -7,6 +7,7 @@ from pathlib import Path
 
 BASE_DIRS = ("Runtime", "Editor")
 DOTWEEN_DIR = "DOTween"
+ROOT_FILES = ("README.md", "CHANGELOG.md")
 WITH_DOTWEEN_ZIP = "UIController_WithDoTween.zip"
 WITHOUT_DOTWEEN_ZIP = "UIController_WithoutDoTween.zip"
 
@@ -44,8 +45,15 @@ def collect_files(root, dir_names):
             raise FileNotFoundError(f"Required directory not found: {target_dir}")
 
         for file_path in sorted(target_dir.rglob("*")):
-            if file_path.is_file():
+            if file_path.is_file() and file_path.suffix != ".meta":
                 files.append(file_path)
+
+    for file_name in ROOT_FILES:
+        file_path = root / file_name
+        if not file_path.is_file():
+            raise FileNotFoundError(f"Required file not found: {file_path}")
+
+        files.append(file_path)
 
     return files
 
