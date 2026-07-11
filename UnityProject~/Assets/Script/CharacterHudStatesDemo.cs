@@ -1,0 +1,28 @@
+using UnityEngine;
+using UnityEngine.UI;
+using Windsmoon.UIController;
+
+public static class CharacterHudStatesDemo
+{
+    private const string SceneName = "CharacterHudStates";
+    private const string ControllerName = "CharacterHUD";
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void BindStateButtons()
+    {
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != SceneName)
+        {
+            return;
+        }
+
+        UIControllerPanel panel = Object.FindFirstObjectByType<UIControllerPanel>();
+        Button normalButton = panel.transform.Find("State_Normal").GetComponent<Button>();
+        Button lowHealthButton = panel.transform.Find("State_LowHealth").GetComponent<Button>();
+        Button deadButton = panel.transform.Find("State_Dead").GetComponent<Button>();
+
+        normalButton.onClick.AddListener(() => panel.SetControllerState(ControllerName, "Normal"));
+        lowHealthButton.onClick.AddListener(() => panel.SetControllerState(ControllerName, "LowHealth"));
+        deadButton.onClick.AddListener(() => panel.SetControllerState(ControllerName, "Dead"));
+        panel.SetControllerState(ControllerName, "Normal", true);
+    }
+}
