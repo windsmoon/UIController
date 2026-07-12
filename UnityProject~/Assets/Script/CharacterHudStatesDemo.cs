@@ -22,7 +22,7 @@ public static class CharacterHudStatesDemo
             return;
         }
 
-        UIControllerPanel panel = Object.FindFirstObjectByType<UIControllerPanel>();
+        UIControllerPanel panel = GameObject.Find("UIControllerDemoPanel").GetComponent<UIControllerPanel>();
         Button normalButton = panel.transform.Find("State_Normal").GetComponent<Button>();
         Button lowHealthButton = panel.transform.Find("State_LowHealth").GetComponent<Button>();
         Button deadButton = panel.transform.Find("State_Dead").GetComponent<Button>();

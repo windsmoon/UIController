@@ -22,7 +22,7 @@ public static class ProgressCooldownStatesDemo
             return;
         }
 
-        UIControllerPanel panel = Object.FindFirstObjectByType<UIControllerPanel>();
+        UIControllerPanel panel = GameObject.Find("UIControllerDemoPanel").GetComponent<UIControllerPanel>();
         Button emptyButton = panel.transform.Find("State_0").GetComponent<Button>();
         Button quarterButton = panel.transform.Find("State_25").GetComponent<Button>();
         Button halfButton = panel.transform.Find("State_50").GetComponent<Button>();

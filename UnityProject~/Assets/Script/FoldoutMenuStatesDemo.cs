@@ -23,7 +23,7 @@ public static class FoldoutMenuStatesDemo
             return;
         }
 
-        UIControllerPanel panel = Object.FindFirstObjectByType<UIControllerPanel>();
+        UIControllerPanel panel = GameObject.Find("UIControllerDemoPanel").GetComponent<UIControllerPanel>();
         Button menuButton = panel.transform.Find("FoldoutMenu").GetComponent<Button>();
         Button toggleButton = panel.transform.Find("ToggleMenu").GetComponent<Button>();
         bool isExpanded = true;

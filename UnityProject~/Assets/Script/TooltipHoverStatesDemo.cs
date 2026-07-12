@@ -24,7 +24,7 @@ public static class TooltipHoverStatesDemo
             return;
         }
 
-        UIControllerPanel panel = Object.FindFirstObjectByType<UIControllerPanel>();
+        UIControllerPanel panel = GameObject.Find("UIControllerDemoPanel").GetComponent<UIControllerPanel>();
         EventTrigger hoverTrigger = panel.transform.Find("HoverTarget").GetComponent<EventTrigger>();
         Button moveButton = panel.transform.Find("MoveTarget").GetComponent<Button>();
         Button showButton = panel.transform.Find("ShowTooltip").GetComponent<Button>();
