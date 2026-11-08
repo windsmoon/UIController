@@ -72,6 +72,12 @@ namespace Windsmoon.UIController.Editor
 
         private void OnDisable()
         {
+            if (Application.isPlaying == false && _pendingAnimatedShowDirty)
+            {
+                DOTweenEditorPreview.Stop(false, true);
+                OnPreviewAnimationCompleted();
+            }
+
             if (_uiControllerPanel != null)
             {
                 _uiControllerPanel.PreviewAnimationCompleted -= OnPreviewAnimationCompleted;
@@ -129,6 +135,12 @@ namespace Windsmoon.UIController.Editor
                 return;
             }
 
+            if (Application.isPlaying == false && _pendingAnimatedShowDirty)
+            {
+                DOTweenEditorPreview.Stop(false, true);
+                OnPreviewAnimationCompleted();
+            }
+
             if (_uiControllerPanel != null)
             {
                 _uiControllerPanel.PreviewAnimationCompleted -= OnPreviewAnimationCompleted;
@@ -153,7 +165,6 @@ namespace Windsmoon.UIController.Editor
         private void ResetWindowState()
         {
             _scrollPosition = Vector2.zero;
-            _pendingAnimatedShowDirty = false;
             _targetSectionExpandedDict.Clear();
             _currentStateIndexDict.Clear();
             _lastMigrationWarningList.Clear();
