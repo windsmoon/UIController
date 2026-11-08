@@ -159,7 +159,7 @@ namespace Windsmoon.UIController
 
         public void StopControllerAnimation(string controllerName)
         {
-            if (HasController(controllerName) == false)
+            if (HasController(controllerName) == false || _propertyTweenDict == null)
             {
                 return;
             }
@@ -174,8 +174,23 @@ namespace Windsmoon.UIController
 
                 foreach (string propertyName in targetData.PropertyNameList)
                 {
-                    KillTween(targetData.RectTransform, propertyName);
+                    UIControllerTweenKey key = new UIControllerTweenKey(targetData.RectTransform, propertyName);
+                    if (_propertyTweenDict.Remove(key, out Tween tween))
+                    {
+                        _tweenList.Add(tween);
+                    }
                 }
+            }
+
+            // 先收集并移除旧记录，再停止动画，避免误停完成回调新建的动画。
+            // 这里直接 foreach 不行，因为 _tweenList 是共享的成员列表。
+            // tween.Kill(false) 会同步触发完成回调。回调如果再次调用 StopControllerAnimation 或 KillTweens，就会添加或移除同一个 _tweenList 的元素，导致外层 foreach 抛出“集合已修改”异常。
+            while (_tweenList.Count > 0)
+            {
+                int lastIndex = _tweenList.Count - 1;
+                Tween tween = _tweenList[lastIndex];
+                _tweenList.RemoveAt(lastIndex);
+                tween?.Kill(false);
             }
         }
 
@@ -665,13 +680,12 @@ namespace Windsmoon.UIController
             }
 
             UIControllerTweenKey key = new UIControllerTweenKey(rectTransform, propertyName);
-            if (_propertyTweenDict.TryGetValue(key, out Tween tween) == false)
+            if (_propertyTweenDict.Remove(key, out Tween tween) == false)
             {
                 return;
             }
 
             // Kill 会同步触发回调，先移除旧记录，避免回调注册的新 Tween 被误删。
-            _propertyTweenDict.Remove(key);
             tween?.Kill(false);
         }
 
