@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using DG.Tweening;
-using Windsmoon.UIController.Properties;
 using UnityEngine;
+using Windsmoon.UIController;
+using Windsmoon.UIController.Properties;
 
-namespace Windsmoon.UIController
+namespace Windsmoon.Controller
 {
     [DisallowMultipleComponent]
     public class UIControllerPanel : MonoBehaviour, ISerializationCallbackReceiver
@@ -58,7 +59,7 @@ namespace Windsmoon.UIController
 #if UNITY_EDITOR
         public event Action PreviewAnimationCompleted;
         private static readonly MethodInfo _prepareTweenForPreviewMethod = Type.GetType("DG.DOTweenEditor.DOTweenEditorPreview, DOTweenEditor")?.GetMethod("PrepareTweenForPreview", BindingFlags.Public | BindingFlags.Static);
-        private int _pendingPreviewAnimationCount;
+        private StateAnimationCompletion _previewAnimationCompletion;
 #endif
         #endregion
 
@@ -85,12 +86,13 @@ namespace Windsmoon.UIController
         #endregion
 
         #region methods
-        private void OnDestroy()
+        public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
         {
-            KillTweens();
+            SetControllerState(controllerName, stateIndex, null, forceNoAnimation);
         }
 
-        public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
+        // 没有动画时同步回调；属性动画结束或被 Kill 时都计入完成。
+        public void SetControllerState(string controllerName, int stateIndex, Action onCompleted, bool forceNoAnimation = false)
         {
             if (_controllerDict == null)
             {
@@ -108,10 +110,15 @@ namespace Windsmoon.UIController
 
             UIControllerData controllerData = FindController(controllerName);
             UIControllerStateData stateData = FindState(controllerData, stateIndex);
-            ApplyControllerState(controllerData, stateData, forceNoAnimation);
+            ApplyControllerState(controllerData, stateData, forceNoAnimation, onCompleted);
         }
 
         public void SetControllerState(string controllerName, string stateName, bool forceNoAnimation = false)
+        {
+            SetControllerState(controllerName, stateName, null, forceNoAnimation);
+        }
+
+        public void SetControllerState(string controllerName, string stateName, Action onCompleted, bool forceNoAnimation = false)
         {
             if (_controllerDict == null)
             {
@@ -129,7 +136,29 @@ namespace Windsmoon.UIController
 
             UIControllerData controllerData = FindController(controllerName);
             UIControllerStateData stateData = FindState(controllerData, stateName);
-            ApplyControllerState(controllerData, stateData, forceNoAnimation);
+            ApplyControllerState(controllerData, stateData, forceNoAnimation, onCompleted);
+        }
+
+        public void StopControllerAnimation(string controllerName)
+        {
+            if (HasController(controllerName) == false)
+            {
+                return;
+            }
+
+            UIControllerData controllerData = _controllerDict[controllerName];
+            foreach (UIControllerTargetData targetData in controllerData.TargetList)
+            {
+                if (targetData == null)
+                {
+                    continue;
+                }
+
+                foreach (string propertyName in targetData.PropertyNameList)
+                {
+                    KillTween(targetData.RectTransform, propertyName);
+                }
+            }
         }
 
         public bool HasController(string controllerName)
@@ -196,11 +225,16 @@ namespace Windsmoon.UIController
             for (int targetIndex = 0; targetIndex < targetStateList.Count; targetIndex++)
             {
                 UIControllerTargetStateData targetStateData = targetStateList[targetIndex];
+                if (targetStateData == null)
+                {
+                    continue;
+                }
+
                 List<UIControllerProperty> propertyList = targetStateData.PropertyList;
                 for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
                 {
                     UIControllerProperty property = propertyList[propertyIndex];
-                    if (property.CanAnimate == false || property.NeedAnimate == false || property.AnimationDuration <= 0f)
+                    if (property == null || property.CanAnimate == false || property.NeedAnimate == false || property.AnimationDuration <= 0f)
                     {
                         continue;
                     }
@@ -346,16 +380,45 @@ namespace Windsmoon.UIController
             throw new Exception($"can't find state name {stateName} in controller {controllerData.Name} on panel {name}");
         }
 
-        private void ApplyControllerState(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation)
+        private void ApplyControllerState(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation, Action onCompleted)
         {
 #if UNITY_EDITOR
             if (Application.isPlaying == false)
             {
-                KillTweens(true);
-                _pendingPreviewAnimationCount = 0;
+                _previewAnimationCompletion?.Cancel();
+                _previewAnimationCompletion = null;
+                KillTweens();
             }
 #endif
 
+            StateAnimationCompletion completion = onCompleted == null ? null : new StateAnimationCompletion(onCompleted);
+            try
+            {
+                ApplyControllerTargets(controllerData, stateData, forceNoAnimation, completion);
+            }
+            catch
+            {
+                completion?.Cancel();
+#if UNITY_EDITOR
+                _previewAnimationCompletion?.Cancel();
+#endif
+                throw;
+            }
+
+#if UNITY_EDITOR
+            if (Application.isPlaying == false)
+            {
+                _previewAnimationCompletion?.CompleteOne();
+            }
+#endif
+            // 初始的 1 表示 Tween 尚未全部注册，避免注册过程中有 Tween 被 Kill 时提前触发回调。
+            // 例如对于同一个 target 的同一个属性，配置中可能会注册多次，允许注册多次，但是注册第二个时会把之前的 kill 掉。
+            // 所有属性处理完后减去这个占位计数；没有 Tween 时也会在此同步触发回调。
+            completion?.CompleteOne();
+        }
+
+        private void ApplyControllerTargets(UIControllerData controllerData, UIControllerStateData stateData, bool forceNoAnimation, StateAnimationCompletion completion)
+        {
             List<UIControllerTargetData> targetList = controllerData.TargetList;
             List<UIControllerTargetStateData> targetStateList = stateData.TargetStateList;
             for (int targetIndex = 0; targetIndex < targetList.Count; targetIndex++)
@@ -383,11 +446,11 @@ namespace Windsmoon.UIController
                     throw new Exception($"controller {controllerData.Name} target index {targetIndex} has no RectTransform on panel {name}");
                 }
 
-                ApplyTargetState(controllerData, targetIndex, targetData, targetStateList[targetIndex], forceNoAnimation);
+                ApplyTargetState(controllerData, targetIndex, targetData, targetStateList[targetIndex], forceNoAnimation, completion);
             }
         }
 
-        private void ApplyTargetState(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData, UIControllerTargetStateData targetStateData, bool forceNoAnimation)
+        private void ApplyTargetState(UIControllerData controllerData, int targetIndex, UIControllerTargetData targetData, UIControllerTargetStateData targetStateData, bool forceNoAnimation, StateAnimationCompletion completion)
         {
             List<string> propertyNameList = targetData.PropertyNameList;
             List<UIControllerProperty> propertyList = targetStateData.PropertyList;
@@ -417,11 +480,11 @@ namespace Windsmoon.UIController
                     throw new Exception($"controller {controllerData.Name} target index {targetIndex} property index {propertyIndex} expected {propertyName}, got {property.Name} on panel {name}");
                 }
 
-                ApplyProperty(property, propertyName, rectTransform, forceNoAnimation);
+                ApplyProperty(property, propertyName, rectTransform, forceNoAnimation, completion);
             }
         }
 
-        private void ApplyProperty(UIControllerProperty property, string propertyName, RectTransform rectTransform, bool forceNoAnimation)
+        private void ApplyProperty(UIControllerProperty property, string propertyName, RectTransform rectTransform, bool forceNoAnimation, StateAnimationCompletion completion)
         {
             KillTween(rectTransform, propertyName);
 
@@ -459,7 +522,8 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            RegisterTween(rectTransform, propertyName, tween);
+            ApplyAnimationOptions(property, tween);
+            RegisterTween(rectTransform, propertyName, tween, completion);
         }
 
         private Tween CreateFloatTween(UIControllerProperty<float> property, RectTransform rectTransform)
@@ -470,11 +534,7 @@ namespace Windsmoon.UIController
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
-            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
-            if (property.AnimationDelay > 0f)
-            {
-                tween.SetDelay(property.AnimationDelay);
-            }
+            }, targetValue, property.AnimationDuration);
 
             return tween;
         }
@@ -487,11 +547,7 @@ namespace Windsmoon.UIController
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
-            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
-            if (property.AnimationDelay > 0f)
-            {
-                tween.SetDelay(property.AnimationDelay);
-            }
+            }, targetValue, property.AnimationDuration);
 
             return tween;
         }
@@ -504,11 +560,7 @@ namespace Windsmoon.UIController
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
-            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
-            if (property.AnimationDelay > 0f)
-            {
-                tween.SetDelay(property.AnimationDelay);
-            }
+            }, targetValue, property.AnimationDuration);
 
             return tween;
         }
@@ -521,11 +573,7 @@ namespace Windsmoon.UIController
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
-            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
-            if (property.AnimationDelay > 0f)
-            {
-                tween.SetDelay(property.AnimationDelay);
-            }
+            }, targetValue, property.AnimationDuration);
 
             return tween;
         }
@@ -538,23 +586,39 @@ namespace Windsmoon.UIController
             {
                 animatedValue = value;
                 property.SetCurrentValue(rectTransform, value);
-            }, targetValue, property.AnimationDuration).SetEase(property.AnimationEase);
-            if (property.AnimationDelay > 0f)
-            {
-                tween.SetDelay(property.AnimationDelay);
-            }
+            }, targetValue, property.AnimationDuration);
 
             return tween;
         }
 
-        private void RegisterTween(RectTransform rectTransform, string propertyName, Tween tween)
+        private void ApplyAnimationOptions(UIControllerProperty property, Tween tween)
+        {
+            tween.SetUpdate(true);
+            AnimationCurve animationCurve = property.AnimationCurve;
+            if (property.UseAnimationCurve && animationCurve != null && animationCurve.length > 0)
+            {
+                tween.SetEase(animationCurve);
+            }
+            else
+            {
+                // 旧配置默认使用 Ease，曲线缺失或被清空时也回退到 Ease。
+                tween.SetEase(property.AnimationEase);
+            }
+
+            if (property.AnimationDelay > 0f)
+            {
+                tween.SetDelay(property.AnimationDelay);
+            }
+        }
+
+        private void RegisterTween(RectTransform rectTransform, string propertyName, Tween tween, StateAnimationCompletion completion)
         {
             if (_propertyTweenDict == null)
             {
                 _propertyTweenDict = new Dictionary<UIControllerTweenKey, Tween>();
             }
 
-            PreparePreviewTween(tween);
+            PreparePreviewTween(tween, completion);
             _propertyTweenDict[new UIControllerTweenKey(rectTransform, propertyName)] = tween;
         }
 
@@ -571,11 +635,12 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            tween?.Kill(false);
+            // Kill 会同步触发回调，先移除旧记录，避免回调注册的新 Tween 被误删。
             _propertyTweenDict.Remove(key);
+            tween?.Kill(false);
         }
 
-        private void KillTweens(bool complete = false)
+        private void KillTweens()
         {
             if (_propertyTweenDict == null)
             {
@@ -584,29 +649,38 @@ namespace Windsmoon.UIController
 
             foreach (Tween tween in _propertyTweenDict.Values)
             {
-                tween?.Kill(complete);
+                tween?.Kill(false);
             }
 
             _propertyTweenDict.Clear();
         }
 
-        private void PreparePreviewTween(Tween tween)
+        private void PreparePreviewTween(Tween tween, StateAnimationCompletion completion)
         {
 #if UNITY_EDITOR
             if (Application.isPlaying == false)
             {
-                _pendingPreviewAnimationCount++;
                 _prepareTweenForPreviewMethod?.Invoke(null, new object[] { tween, true, true, true });
-                tween.OnComplete(() =>
+                // 预览初始化会清除 Tween 回调，需要在初始化之后注册。
+                _previewAnimationCompletion ??= new StateAnimationCompletion(() => PreviewAnimationCompleted?.Invoke());
+                Action previewOnCompleted = _previewAnimationCompletion.Register(tween);
+                Action stateOnCompleted = completion?.Register(tween);
+                // Tween 的 OnKill 会被覆盖，在同一个回调中完成两组计数。
+                Action onTweenFinished = () =>
                 {
-                    _pendingPreviewAnimationCount--;
-                    if (_pendingPreviewAnimationCount == 0)
-                    {
-                        PreviewAnimationCompleted?.Invoke();
-                    }
-                });
+                    previewOnCompleted();
+                    stateOnCompleted?.Invoke();
+                };
+                tween.OnKill(() => onTweenFinished());
+                tween.OnComplete(() => onTweenFinished());
+                return;
             }
 #endif
+            Action onCompleted = completion?.Register(tween);
+            if (onCompleted != null)
+            {
+                tween.OnComplete(() => onCompleted());
+            }
         }
 
 #if UNITY_EDITOR

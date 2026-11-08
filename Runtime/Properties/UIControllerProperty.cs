@@ -18,6 +18,10 @@ namespace Windsmoon.UIController.Properties
         [SerializeField]
         private Ease _animationEase = DefaultAnimationEase;
         [SerializeField]
+        private bool _useAnimationCurve;
+        [SerializeField]
+        private AnimationCurve _animationCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+        [SerializeField]
         private float _animationDuration = DefaultAnimationDuration;
         [SerializeField]
         private float _animationDelay;
@@ -35,6 +39,16 @@ namespace Windsmoon.UIController.Properties
         {
             get => _animationEase == Ease.Unset ? DefaultAnimationEase : _animationEase;
             set => _animationEase = value;
+        }
+        public bool UseAnimationCurve
+        {
+            get => _useAnimationCurve;
+            set => _useAnimationCurve = value;
+        }
+        public AnimationCurve AnimationCurve
+        {
+            get => _animationCurve;
+            set => _animationCurve = value;
         }
         public float AnimationDuration
         {
