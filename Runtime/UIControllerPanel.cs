@@ -508,6 +508,13 @@ namespace Windsmoon.UIController
 
             if (property.CanAnimate == false || property.NeedAnimate == false || forceNoAnimation || property.AnimationDuration <= 0f)
             {
+                // 旧动画的完成回调可能再次启动同一属性，清理完后再应用当前状态。
+                UIControllerTweenKey key = new UIControllerTweenKey(rectTransform, propertyName);
+                while (_propertyTweenDict != null && _propertyTweenDict.ContainsKey(key))
+                {
+                    KillTween(rectTransform, propertyName);
+                }
+
                 property.ApplyTargetValue(rectTransform);
                 return;
             }
@@ -536,6 +543,12 @@ namespace Windsmoon.UIController
 
             if (tween == null)
             {
+                UIControllerTweenKey key = new UIControllerTweenKey(rectTransform, propertyName);
+                while (_propertyTweenDict != null && _propertyTweenDict.ContainsKey(key))
+                {
+                    KillTween(rectTransform, propertyName);
+                }
+
                 property.ApplyTargetValue(rectTransform);
                 return;
             }
