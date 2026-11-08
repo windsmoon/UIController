@@ -86,12 +86,29 @@ namespace Windsmoon.UIController
         #endregion
 
         #region methods
+        private void OnDestroy()
+        {
+            if (_propertyTweenDict == null)
+            {
+                return;
+            }
+
+            foreach (Tween tween in _propertyTweenDict.Values)
+            {
+                // 销毁时取消动画，避免完成回调访问已销毁的 Panel 或重新创建动画。
+                tween.OnKill(null);
+                tween.Kill(false);
+            }
+
+            _propertyTweenDict.Clear();
+        }
+
         public void SetControllerState(string controllerName, int stateIndex, bool forceNoAnimation = false)
         {
             SetControllerState(controllerName, stateIndex, null, forceNoAnimation);
         }
 
-        // 没有动画时同步回调；属性动画结束或被 Kill 时都计入完成。
+        // 没有动画时同步回调；属性动画结束或被 Kill 时都计入完成，Panel 销毁时除外。
         public void SetControllerState(string controllerName, int stateIndex, Action onCompleted, bool forceNoAnimation = false)
         {
             if (_controllerDict == null)
