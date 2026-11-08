@@ -856,16 +856,19 @@ namespace Windsmoon.UIController.Editor
             float animationDuration = property.AnimationDuration;
             float animationDelay = property.AnimationDelay;
             EditorGUI.BeginChangeCheck();
-            bool useAnimationCurve = GUILayout.Toggle(property.UseAnimationCurve, "Curve", GUILayout.Width(60f));
+            bool newUseAnimationCurve = EditorGUILayout.ToggleLeft(
+                new GUIContent("Curve", "Use a custom curve. X: time from 0 to 1; Y: progress from 0 to 1. Empty curves fall back to Ease."),
+                property.UseAnimationCurve, GUILayout.Width(64f));
             Ease newAnimationEase = animationEase;
             AnimationCurve newAnimationCurve = animationCurve;
-            if (useAnimationCurve)
+            if (newUseAnimationCurve)
             {
-                newAnimationCurve = EditorGUILayout.CurveField(animationCurve, GUILayout.Width(150f));
+                // 曲线窗口会直接修改曲线，传入和保存时都复制，保证 Undo 能记录修改前的数据。
+                AnimationCurve editableCurve = CloneAnimationCurve(animationCurve) ?? AnimationCurve.Linear(0f, 0f, 1f, 1f);
+                newAnimationCurve = EditorGUILayout.CurveField(editableCurve, GUILayout.Width(150f));
             }
             else
             {
-                GUILayout.Label("Ease", GUILayout.Width(34f));
                 newAnimationEase = (Ease)EditorGUILayout.EnumPopup(animationEase, GUILayout.Width(150f));
             }
             GUILayout.Label("Duration", GUILayout.Width(58f));
@@ -879,8 +882,8 @@ namespace Windsmoon.UIController.Editor
                 ApplyMutation("Edit UIController Property Animation", () =>
                 {
                     property.AnimationEase = newAnimationEase;
-                    property.UseAnimationCurve = useAnimationCurve;
-                    property.AnimationCurve = newAnimationCurve;
+                    property.UseAnimationCurve = newUseAnimationCurve;
+                    property.AnimationCurve = CloneAnimationCurve(newAnimationCurve);
                     property.AnimationDuration = newAnimationDuration;
                     property.AnimationDelay = newAnimationDelay;
                 });
@@ -888,6 +891,20 @@ namespace Windsmoon.UIController.Editor
 
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
+        }
+
+        private AnimationCurve CloneAnimationCurve(AnimationCurve animationCurve)
+        {
+            if (animationCurve == null)
+            {
+                return null;
+            }
+
+            return new AnimationCurve(animationCurve.keys)
+            {
+                preWrapMode = animationCurve.preWrapMode,
+                postWrapMode = animationCurve.postWrapMode
+            };
         }
 
         private void AddControllerTarget(UIControllerData controllerData)
@@ -1263,7 +1280,7 @@ namespace Windsmoon.UIController.Editor
             bool hasAnimatedProperty = HasAnimatedProperty(controllerData, controllerData.StateList[stateIndex]);
             if (Application.isPlaying == false)
             {
-                DOTweenEditorPreview.Stop(false, false);
+                DOTweenEditorPreview.Stop(false, true);
                 DOTweenEditorPreview.Start(null);
             }
 
@@ -1286,7 +1303,7 @@ namespace Windsmoon.UIController.Editor
                 for (int propertyIndex = 0; propertyIndex < propertyList.Count; propertyIndex++)
                 {
                     UIControllerProperty property = propertyList[propertyIndex];
-                    if (property != null && property.CanAnimate && property.NeedAnimate)
+                    if (property != null && property.CanAnimate && property.NeedAnimate && property.AnimationDuration > 0f)
                     {
                         return true;
                     }
