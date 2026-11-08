@@ -6,7 +6,7 @@ using UnityEngine;
 using Windsmoon.UIController;
 using Windsmoon.UIController.Properties;
 
-namespace Windsmoon.Controller
+namespace Windsmoon.UIController
 {
     [DisallowMultipleComponent]
     public class UIControllerPanel : MonoBehaviour, ISerializationCallbackReceiver
