@@ -56,6 +56,7 @@ namespace Windsmoon.UIController
 
         private Dictionary<string, UIControllerData> _controllerDict;
         private Dictionary<UIControllerTweenKey, Tween> _propertyTweenDict;
+        private readonly List<Tween> _tweenList = new List<Tween>();
 #if UNITY_EDITOR
         public event Action PreviewAnimationCompleted;
         private static readonly MethodInfo _prepareTweenForPreviewMethod = Type.GetType("DG.DOTweenEditor.DOTweenEditorPreview, DOTweenEditor")?.GetMethod("PrepareTweenForPreview", BindingFlags.Public | BindingFlags.Static);
@@ -664,12 +665,17 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            foreach (Tween tween in _propertyTweenDict.Values)
+            // Kill 会同步触发回调，先取出旧动画并清空记录，避免遍历失效或误删回调创建的新动画。
+            _tweenList.AddRange(_propertyTweenDict.Values);
+            _propertyTweenDict.Clear();
+            while (_tweenList.Count > 0)
             {
+                int lastIndex = _tweenList.Count - 1;
+                Tween tween = _tweenList[lastIndex];
+                // 先移除再 Kill，回调重入时继续处理剩余动画，不重复处理当前动画。
+                _tweenList.RemoveAt(lastIndex);
                 tween?.Kill(false);
             }
-
-            _propertyTweenDict.Clear();
         }
 
         private void PreparePreviewTween(Tween tween, StateAnimationCompletion completion)
