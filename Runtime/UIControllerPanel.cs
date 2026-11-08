@@ -58,9 +58,7 @@ namespace Windsmoon.UIController
         private Dictionary<UIControllerTweenKey, Tween> _propertyTweenDict;
         private readonly List<Tween> _tweenList = new List<Tween>();
 #if UNITY_EDITOR
-        public event Action PreviewAnimationCompleted;
         private static readonly MethodInfo _prepareTweenForPreviewMethod = Type.GetType("DG.DOTweenEditor.DOTweenEditorPreview, DOTweenEditor")?.GetMethod("PrepareTweenForPreview", BindingFlags.Public | BindingFlags.Static);
-        private StateAnimationCompletion _previewAnimationCompletion;
 #endif
         #endregion
 
@@ -109,7 +107,7 @@ namespace Windsmoon.UIController
             SetControllerState(controllerName, stateIndex, null, forceNoAnimation);
         }
 
-        // 没有动画时同步回调；属性动画结束或被 Kill 时都计入完成，Panel 销毁时除外。
+        // 运行时没有动画时同步回调；属性动画结束或被 Kill 时都计入完成，Panel 销毁时除外。编辑模式预览不执行回调。
         public void SetControllerState(string controllerName, int stateIndex, Action onCompleted, bool forceNoAnimation = false)
         {
             if (_controllerDict == null)
@@ -290,6 +288,24 @@ namespace Windsmoon.UIController
         }
 
 #if UNITY_EDITOR
+        public bool HasPendingPreviewAnimation()
+        {
+            if (_propertyTweenDict == null)
+            {
+                return false;
+            }
+
+            foreach (Tween tween in _propertyTweenDict.Values)
+            {
+                if (tween.IsActive() && tween.IsComplete() == false)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool NeedsLegacyMigration()
         {
             List<UIControllerData> controllerList = ControllerList;
@@ -418,8 +434,7 @@ namespace Windsmoon.UIController
 #if UNITY_EDITOR
             if (Application.isPlaying == false)
             {
-                _previewAnimationCompletion?.Cancel();
-                _previewAnimationCompletion = null;
+                onCompleted = null;
                 KillTweens();
             }
 #endif
@@ -432,18 +447,9 @@ namespace Windsmoon.UIController
             catch
             {
                 completion?.Cancel();
-#if UNITY_EDITOR
-                _previewAnimationCompletion?.Cancel();
-#endif
                 throw;
             }
 
-#if UNITY_EDITOR
-            if (Application.isPlaying == false)
-            {
-                _previewAnimationCompletion?.CompleteOne();
-            }
-#endif
             // 初始的 1 表示 Tween 尚未全部注册，避免注册过程中有 Tween 被 Kill 时提前触发回调。
             // 例如对于同一个 target 的同一个属性，配置中可能会注册多次，允许注册多次，但是注册第二个时会把之前的 kill 掉。
             // 所有属性处理完后减去这个占位计数；没有 Tween 时也会在此同步触发回调。
@@ -715,18 +721,6 @@ namespace Windsmoon.UIController
             if (Application.isPlaying == false)
             {
                 _prepareTweenForPreviewMethod?.Invoke(null, new object[] { tween, true, true, true });
-                // 预览初始化会清除 Tween 回调，需要在初始化之后注册。
-                _previewAnimationCompletion ??= new StateAnimationCompletion(() => PreviewAnimationCompleted?.Invoke());
-                Action previewOnCompleted = _previewAnimationCompletion.Register(tween);
-                Action stateOnCompleted = completion?.Register(tween);
-                // Tween 的 OnKill 会被覆盖，在同一个回调中完成两组计数。
-                Action onTweenFinished = () =>
-                {
-                    previewOnCompleted();
-                    stateOnCompleted?.Invoke();
-                };
-                tween.OnKill(() => onTweenFinished());
-                tween.OnComplete(() => onTweenFinished());
                 return;
             }
 #endif

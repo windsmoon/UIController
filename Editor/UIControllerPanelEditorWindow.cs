@@ -75,15 +75,27 @@ namespace Windsmoon.UIController.Editor
             if (Application.isPlaying == false && _pendingAnimatedShowDirty)
             {
                 DOTweenEditorPreview.Stop(false, true);
-                OnPreviewAnimationCompleted();
-            }
-
-            if (_uiControllerPanel != null)
-            {
-                _uiControllerPanel.PreviewAnimationCompleted -= OnPreviewAnimationCompleted;
+                MarkPreviewTargetsDirty();
             }
 
             _pendingAnimatedShowDirty = false;
+        }
+
+        private void Update()
+        {
+            if (Application.isPlaying || _pendingAnimatedShowDirty == false || _uiControllerPanel == null)
+            {
+                return;
+            }
+
+            if (_uiControllerPanel.HasPendingPreviewAnimation())
+            {
+                return;
+            }
+
+            _pendingAnimatedShowDirty = false;
+            DOTweenEditorPreview.Stop(false, true);
+            MarkPreviewTargetsDirty();
         }
 
         private void OnSelectionChange()
@@ -138,12 +150,7 @@ namespace Windsmoon.UIController.Editor
             if (Application.isPlaying == false && _pendingAnimatedShowDirty)
             {
                 DOTweenEditorPreview.Stop(false, true);
-                OnPreviewAnimationCompleted();
-            }
-
-            if (_uiControllerPanel != null)
-            {
-                _uiControllerPanel.PreviewAnimationCompleted -= OnPreviewAnimationCompleted;
+                MarkPreviewTargetsDirty();
             }
 
             _uiControllerPanel = uiControllerPanel;
@@ -156,7 +163,6 @@ namespace Windsmoon.UIController.Editor
             if (_uiControllerPanel != null)
             {
                 RefreshPanelCaches();
-                _uiControllerPanel.PreviewAnimationCompleted += OnPreviewAnimationCompleted;
             }
 
             Repaint();
@@ -1292,6 +1298,11 @@ namespace Windsmoon.UIController.Editor
             if (Application.isPlaying == false)
             {
                 DOTweenEditorPreview.Stop(false, true);
+                if (_pendingAnimatedShowDirty)
+                {
+                    MarkPreviewTargetsDirty();
+                }
+
                 DOTweenEditorPreview.Start(null);
             }
 
@@ -1383,17 +1394,6 @@ namespace Windsmoon.UIController.Editor
             {
                 EditorSceneManager.MarkSceneDirty(_uiControllerPanel.gameObject.scene);
             }
-        }
-
-        private void OnPreviewAnimationCompleted()
-        {
-            if (_pendingAnimatedShowDirty == false)
-            {
-                return;
-            }
-
-            _pendingAnimatedShowDirty = false;
-            MarkPreviewTargetsDirty();
         }
 
         private bool IsLegacyShape(UIControllerData controllerData)
