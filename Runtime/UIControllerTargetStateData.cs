@@ -64,8 +64,16 @@ namespace Windsmoon.UIController
                 return;
             }
 
-            RemoveProperty(property.Name);
-            _propertyList.Add(property);
+            int propertyIndex = _propertyList.FindIndex(existingProperty => existingProperty?.Name == property.Name);
+            if (propertyIndex >= 0)
+            {
+                _propertyList[propertyIndex] = property;
+            }
+            else
+            {
+                _propertyList.Add(property);
+            }
+
             EnsurePropertyDict();
             _propertyDict[property.Name] = property;
         }
