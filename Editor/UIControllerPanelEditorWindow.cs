@@ -31,6 +31,7 @@ namespace Windsmoon.UIController.Editor
         private readonly List<string> _lastMigrationWarningList = new List<string>();
         private readonly HashSet<int> _duplicateStateNameIndexSet = new HashSet<int>();
         private int _duplicateStateNameControllerIndex = -1;
+        private int _duplicateStateNameControllerCount = -1;
         private GUIStyle _sectionBoxStyle;
         private GUIStyle _sectionHeaderStyle;
         private GUIStyle _controllerTargetHeaderStyle;
@@ -1222,7 +1223,7 @@ namespace Windsmoon.UIController.Editor
 
         private void EnsureDuplicateStateNameScan(List<UIControllerData> controllerList)
         {
-            if (_duplicateStateNameControllerIndex == _currentControllerIndex)
+            if (_duplicateStateNameControllerIndex == _currentControllerIndex && _duplicateStateNameControllerCount == controllerList.Count)
             {
                 return;
             }
@@ -1234,6 +1235,7 @@ namespace Windsmoon.UIController.Editor
         {
             _duplicateStateNameIndexSet.Clear();
             _duplicateStateNameControllerIndex = _currentControllerIndex;
+            _duplicateStateNameControllerCount = _uiControllerPanel.ControllerList.Count;
 
             List<UIControllerStateData> stateList = controllerData.StateList;
             Dictionary<string, int> stateNameIndexDict = new Dictionary<string, int>(stateList.Count);
