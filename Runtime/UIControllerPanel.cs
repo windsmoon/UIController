@@ -637,7 +637,11 @@ namespace Windsmoon.UIController
             }
 
             PreparePreviewTween(tween, completion);
-            _propertyTweenDict[new UIControllerTweenKey(rectTransform, propertyName)] = tween;
+            UIControllerTweenKey key = new UIControllerTweenKey(rectTransform, propertyName);
+            _propertyTweenDict.TryGetValue(key, out Tween previousTween);
+            // 先登记新动画再停止旧动画，避免 Kill 回调重入后，新记录又被外层覆盖。
+            _propertyTweenDict[key] = tween;
+            previousTween?.Kill(false);
         }
 
         private void KillTween(RectTransform rectTransform, string propertyName)
