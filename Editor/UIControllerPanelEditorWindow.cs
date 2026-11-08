@@ -62,6 +62,7 @@ namespace Windsmoon.UIController.Editor
 
         private void OnEnable()
         {
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             minSize = new Vector2(680f, 440f);
             titleContent = new GUIContent("UIController Panel");
             if (_uiControllerPanel == null)
@@ -72,6 +73,7 @@ namespace Windsmoon.UIController.Editor
 
         private void OnDisable()
         {
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             if (Application.isPlaying == false && _pendingAnimatedShowDirty)
             {
                 DOTweenEditorPreview.Stop(false, true);
@@ -79,6 +81,12 @@ namespace Windsmoon.UIController.Editor
             }
 
             _pendingAnimatedShowDirty = false;
+        }
+
+        private void OnUndoRedoPerformed()
+        {
+            _duplicateStateNameControllerIndex = -1;
+            Repaint();
         }
 
         private void Update()
